@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Coletas - Contuflex</title>
+    <style>
+        
+        :root {--bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);}
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-gradient); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { width: 100%; padding: 20px; text-align: center; color: #2d3436; }
+        .nav-container { width: 95%; max-width: 1300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .badge-alerta { background: #ff4757; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .filter-box { background: white; width: 95%; max-width: 1300px; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        input { padding: 10px; border-radius: 6px; border: 1px solid #ccc; outline: none; }
+        .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-blue { background: #003d5b; color: white; }
+        .btn-green { background: #2ed573; color: white; }
+        .btn-active { background: #1e90ff !important; outline: 2px solid white; }
+        .main-card { background: white; width: 95%; max-width: 1300px; border-radius: 12px; padding: 20px; box-shadow: 0 8px 15px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #003d5b; font-size: 12px; text-transform: uppercase; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f1f1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .row-item:hover { background-color: #f9f9f9; }
+        .status-alerta { color: #ff4757; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="background: white; display: inline-block; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Logo" width="160">
+        </div>
+        <h1>Painel de Gestão de Expedição</h1>
+        <h4>Feito Por Vicenzo!</h4>
+    </header>
+ <div class="nav-container">
+        <a href="inicio.html" style="color: white; font-weight: bold; text-decoration: none; background: rgba(0,0,0,0.2); padding: 8px 15px; border-radius: 6px;">🏠 Início</a>
+    </div>
+  
+    <div class="filter-box">
+        <div class="filter-row">
+            <input type="text" id="inputBusca" placeholder="Busca Rápida..." style="width: 250px;">
+            <button class="btn" style="background: #8e44ad; color: white;" id="btn-agendada" onclick="toggleAgendada(this)">📅 Coleta Agendada</button>
+            <button class="btn btn-blue" id="btn-nosso" onclick="toggleFiltro('transp', 'NOSSO CARRO', this)">🚛 Nosso Carro</button>
+            <button class="btn btn-blue" id="btn-retira" onclick="toggleFiltro('transp', 'RETIRA', this)">📦 Retira</button>
+            <button class="btn btn-blue" id="btn-outros" onclick="toggleFiltro('transp', 'OUTROS', this)">🚚 Transportadora</button>
+            <button class="btn" style="background: #ff4757; color: white;" id="btn-aguardando" onclick="toggleFiltro('status', 'AGUARDANDO', this)">🕒 Aguardando</button>
+            <button class="btn" style="background: #2ed573; color: white;" id="btn-coletado" onclick="toggleFiltro('status', 'COLETADO', this)">✅ Expedido</button>
+            <button class="btn" style="background: #eee;" onclick="resetar()">Limpar</button>
+        </div>
+        <button class="btn" style="background: #576574; color: white;" onclick="toggleGrafico()">📊 Gráficos</button>
+        <div class="filter-row" style="border-top: 1px solid #eee; padding-top: 10px;">
+            <span>Data:</span> <input type="date" id="dataInicio"> <span>até</span> <input type="date" id="dataFim">
+            <button class="btn btn-green" onclick="carregarDados()">🔄 Consultar Banco</button>
+        </div>
+    </div>
+ <div class="nav-container" style="display: flex; justify-content: center; align-items: center; width: 100%; padding: 10px;">
+    <div class="badge-alerta" style="padding: 5px 15px; background: #0c8af1; border-radius: 20px;">
+        📦 Total: <span id="count-alerta">0</span>
+    </div>
+</div>
+<div id="containerGrafico" class="main-card" style="display: none; justify-content: center; align-items: center; gap: 20px; width: 95%; max-width: 1000px; margin: 0 auto 20px auto; padding: 15px;">
+    <div style="width: 400px; height: 250px;">
+        <canvas id="meuGrafico"></canvas>
+    </div>
+    
+    <div style="width: 400px; height: 250px;">
+        <canvas id="meuGraficoExcel"></canvas>
+    </div>
+</div>        
+    <div class="main-card">
+        <table id="tabelaDados">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Emissão NF</th>
+                    <th style="width: 100px;">Pedido</th>
+                    <th style="width: 150px;">Vendedor</th>
+                    <th style="width: 100px;">NF</th>
+                    <th>Cliente</th>
+                    <th style="width: 150px;">Transporte</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 100px;">Progresso</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+    </div>
+
+<script>
+    let filtrarAgendadas = false; 
+    let meuGrafico;
+    let dadosOriginais = [];
+    let fTransp = "";
+    let fStatus = "";
+    let filtroDataPor = 'emissao';
+    let graficoExcel;
+    Chart.register(ChartDataLabels);
+
+   async function carregarGraficoExcel(dataInicio = '', dataFim = '') {
+        try {
+            let params = new URLSearchParams();
+            if (dataInicio) params.append('inicio', dataInicio);
+            if (dataFim) params.append('fim', dataFim);
+
+            const url = `${window.location.origin}/pedidos/status_excel?${params.toString()}`;
+            const res = await fetch(url);
+            const dados = await res.json();
+            
+            const ctx = document.getElementById('meuGraficoExcel').getContext('2d');
+            
+            if (graficoExcel) {
+                graficoExcel.destroy();
+            }
+
+            graficoExcel = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['No Prazo', 'Atrasado'],
+                    datasets: [{
+                        data: [dados.no_prazo, dados.atrasado],
+                        backgroundColor: ['#003d5b', '#ffc107'], 
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        title: { display: true, text: 'Pontualidade Geral' },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (value, ctx) => {
+                                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                return (sum > 0 && value > 0) ? ((value * 100 / sum).toFixed(1) + "%") : '';
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Erro ao carregar dados do Excel:", e);
+        }
+    }
+    function toggleGrafico() {
+    const g = document.getElementById('containerGrafico');
+    if (g.style.display === "none") {
+        g.style.display = "flex"; 
+    } else {
+        g.style.display = "none"; 
+    }
+}
+    
+    function atualizarGrafico(dadosFiltrados) {
+    const contagem = {
+        "NOSSO CARRO": 0,
+        "RETIRA": 0,
+        "TRANSPORTADORA": 0
+    };
+
+    dadosFiltrados.forEach(p => {
+        const t = (p.transp || "").toUpperCase().trim();
+        if (t === "NOSSO CARRO") {
+            contagem["NOSSO CARRO"]++;
+        } else if (t === "RETIRA") {
+            contagem["RETIRA"]++;
+        } else if (t !== "") {
+            contagem["TRANSPORTADORA"]++;
+        }
+    });
+
+    const ctx = document.getElementById('meuGrafico').getContext('2d');
+    if (meuGrafico) meuGrafico.destroy();
+
+    meuGrafico = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Nosso Carro', 'Retira', 'Transportadora'],
+            datasets: [{
+                data: [contagem["NOSSO CARRO"], contagem["RETIRA"], contagem["TRANSPORTADORA"]],
+                backgroundColor: ['#2ed573', '#1e90ff', '#ffa502'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'left' },
+                title: { display: true, text: 'Resumo de Transportes' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 12 },
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return value > 0 ? percentage : '';
+                    }
+                }
+            }
+        }
+    });
+}
+
+    
+    let timeoutBusca;
+    document.getElementById('inputBusca').addEventListener('input', () => {
+        clearTimeout(timeoutBusca);
+        timeoutBusca = setTimeout(renderizar, 300);
+    });
+
+    
+    async function carregarDados() {
+        const body = document.getElementById('corpo-tabela');
+        body.innerHTML = "<tr><td colspan='8' style='text-align:center'>Carregando dados...</td></tr>";
+        
+        try {
+            const di = document.getElementById('dataInicio').value;
+            const df = document.getElementById('dataFim').value;
+            
+            let url = window.location.origin + '/pedidos/pendentes_coleta';
+            let params = new URLSearchParams();
+            
+            if (di) params.append('inicio', di);
+            if (df) params.append('fim', df);
+            params.append('tipo_data', filtroDataPor); 
+
+            url += `?${params.toString()}`;
+
+            const res = await fetch(url);
+            dadosOriginais = await res.json();
+
+            dadosOriginais.sort((a, b) => {
+                const campo = filtroDataPor === 'status' ? 'data_col' : 'emissao';
+                const dateA = a[campo] ? a[campo].split('/').reverse().join('') : '0';
+                const dateB = b[campo] ? b[campo].split('/').reverse().join('') : '0';
+                return dateB.localeCompare(dateA);
+            });
+
+            renderizar(); 
+            
+            carregarGraficoExcel(di, df); 
+
+        } catch (e) {
+            console.error("Erro ao carregar:", e);
+            body.innerHTML = "<tr><td colspan='8' style='text-align:center; color:red'>Erro ao carregar dados.</td></tr>";
+        }
+    }
+
+function toggleAgendada(btn) {
+    filtrarAgendadas = !filtrarAgendadas;
+    btn.classList.toggle('btn-active', filtrarAgendadas);
+    renderizar();
+}
+    
+function toggleFiltro(tipo, valor, btn) {
+    if (tipo === 'transp') {
+        const jaAtivo = fTransp === valor;
+        document.querySelectorAll('.btn-blue').forEach(b => b.classList.remove('btn-active'));
+        fTransp = jaAtivo ? "" : valor;
+        if (!jaAtivo) btn.classList.add('btn-active');
+    } else {
+        const jaAtivo = fStatus === valor;
+        fStatus = jaAtivo ? "" : valor;
+        btn.classList.toggle('btn-active', !jaAtivo);
+
+        
+        if (valor === 'COLETADO' && !jaAtivo) {
+            filtroDataPor = 'status';
+        } else {
+            filtroDataPor = 'emissao';
+        }
+    }
+    renderizar();
+}
+
+    function resetar() {
+    fTransp = ""; 
+    fStatus = "";
+    filtrarAgendadas = false; 
+    filtroDataPor = 'emissao';
+    document.getElementById('inputBusca').value = "";
+    document.querySelectorAll('.btn').forEach(b => b.classList.remove('btn-active'));
+    renderizar();
+}
+
+    
+    function renderizar() {
+        const busca = document.getElementById('inputBusca').value.toUpperCase();
+        const body = document.getElementById('corpo-tabela');
+        
+        
+        if (!dadosOriginais) return;
+
+        const filtrados = dadosOriginais.filter(p => {
+            
+            const txt = `${p.pedido} ${p.cliente} ${p.vendedor} ${p.nf} ${p.transp}`.toUpperCase();
+            const bOk = !busca || txt.includes(busca);
+            
+            const temData = (p.data_col && p.data_col.includes('/')); 
+            const sValExibicao = temData ? 'COLETADO' : 'AGUARDANDO';
+            const sOk = !fStatus || sValExibicao === fStatus;
+
+            const tVal = (p.transp || "").toUpperCase().trim();
+            const eTransportadora = (tVal !== "NOSSO CARRO" && tVal !== "RETIRA" && tVal !== "");
+
+           
+            if (filtrarAgendadas && eTransportadora) {
+                const protocolo = String(p.protoc_coleta || "").trim().toLowerCase();
+                const temProtocolo = protocolo !== "" && protocolo !== "none" && protocolo !== "undefined";
+                if (!temProtocolo) return false; 
+            }
+
+            
+            let tOk = true;
+            if (fTransp === "OUTROS") {
+                tOk = eTransportadora;
+            } else if (fTransp) {
+                tOk = (tVal === fTransp);
+            }
+
+            return bOk && sOk && tOk;
+        });
+
+        
+        let html = "";
+        filtrados.forEach(p => {
+            const corStatus = (p.data_col && p.data_col.includes('/')) ? '#2ed573' : '#ff4757';
+
+            html += `<tr class="row-item">
+                <td style="font-weight:bold">${p.emissao || ''}</td>
+                <td>${p.pedido || ''}</td>
+                <td>${p.vendedor || ''}</td>
+                <td style="color:#2ed573; font-weight:bold">${p.nf || ''}</td>
+                <td title="${p.cliente}">${p.cliente || ''}</td>
+                <td>${p.transp || ''}</td>
+                <td style="color: ${corStatus}; font-weight: bold;">${p.data_col || 'AGUARDANDO'}</td>
+                <td>${p.producao || ''}</td>
+            </tr>`;
+        });
+
+        body.innerHTML = html || "<tr><td colspan='8' style='text-align:center'>Nenhum resultado encontrado.</td></tr>";
+        
+        
+        document.getElementById('count-alerta').innerText = filtrados.length;
+        
+        
+        if (typeof atualizarGrafico === "function") {
+            atualizarGrafico(filtrados);
+        }
+    }
+
+    
+   window.onload = () => {
+    carregarDados(); 
+};
+</script>
+</body>
+</html>

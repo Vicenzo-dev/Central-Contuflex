@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Pedidos - Contuflex</title>
+    
+    <style>
+        
+          :root {
+                 --primary-color: #004a87;
+                 --secondary-color: #00a8e8;
+                   --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                  --glass-bg: rgba(255, 255, 255, 0.85);
+                   --text-dark: #2d3436;
+}  
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            color: #333;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            color: #2d3436;
+        }
+
+        .nav-container {
+            width: 90%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .btn-inicio {
+            padding: 10px 20px;
+            background-color: #ffffff22;
+            color: #2d3436;
+            border: 1px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .btn-inicio:hover {
+            background-color: white;
+            color: #003d5b;
+        }
+
+    
+        .search-container {
+            margin: 10px 0 30px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            width: 280px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .btn-search {
+            padding: 12px 25px;
+            background-color: #00a8e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 1200px;
+            padding-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            border-top: 4px solid #00a8e8;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 12px;
+            color: #003d5b;
+            text-transform: uppercase;
+        }
+
+        .card p {
+            margin: 12px 0 0 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        
+        .card-full {
+            grid-column: 1 / -1;
+            text-align: left;
+            padding: 25px;
+        }
+
+        .footer-tag {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="background: white; display: inline-block; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Logo" width="160">
+        </div>
+        <h1>Painel de Consulta de Pedidos</h1>
+        <h4>Feito Por Vicenzo!</h4>
+    </header>
+
+    <div class="nav-container">
+        <a href="inicio.html" class="btn-inicio">🏠 Voltar ao Início</a>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="inputPedido" placeholder="Digite o Pedido (ex: PTBQU7)">
+        <button class="btn-search" onclick="buscarPedido()">Pesquisar</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>Pedido</h3>
+            <p id="res-pedido">-</p>
+        </div>
+        
+        <div class="card">
+            <h3>Empresa</h3>
+            <p id="res-empresa">-</p>
+        </div>
+
+        <div class="card">
+            <h3>Nota Fiscal</h3>
+            <p id="res-nf" style="color: #00a8e8;">-</p>
+        </div>
+
+         
+
+        <div class="card">
+            <h3>Emissão NF</h3>
+            <p id="res-emissao-nf">-</p>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h3>Cliente</h3>
+            <p id="res-cliente" style="font-size: 15px;">-</p>
+        </div>
+
+        <div class="card">
+            <h3>Emissão Pedido</h3>
+            <p id="res-emissao-ped">-</p>
+        </div>
+
+        <div class="card">
+            <h3>Transporte via</h3>
+            <p id="res-transp">-</p>
+        </div>
+          <div class="card">
+    <h3>Vendedor</h3>
+    <p id="res-vendedor" style="color: #00a8e8;">-</p>
+</div>
+<div class="card">
+    <h3>Progresso</h3>
+    <p id="res-producao" style="color: #00a8e8;">-</p>
+</div>
+
+<div class="card">
+            <h3>Status de coleta</h3>
+            <p id="res-data_col" style="color: #00a8e8;">-</p>
+        </div>
+
+        <div class="card card-full">
+            <h3 style="text-align: center;">Status / Observação Interna</h3>
+            <p id="res-obs" style="font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
+                Digite um pedido para carregar as informações do banco TOTVS.
+            </p>
+        </div>
+    </div>
+
+    <div class="footer-tag">Feito por Vicenzo! - Contuflex</div>
+
+    <script>
+        async function buscarPedido() {
+            const pedidoInput = document.getElementById('inputPedido').value.toUpperCase();
+            if (!pedidoInput) return;
+
+            const resObs = document.getElementById('res-obs');
+            resObs.innerText = "Buscando no banco...";
+
+            try {
+                const response = await fetch(`${window.location.origin}/pedido/${pedidoInput}`);
+                const data = await response.json();
+
+                if (data.erro) {
+                    alert("Pedido não encontrado!");
+                    resObs.innerText = "Erro: Pedido não localizado.";
+                } else {
+                   
+                    document.getElementById('res-pedido').innerText      = data.pedido;
+                    document.getElementById('res-empresa').innerText     = data.empresa;
+                    document.getElementById('res-cliente').innerText     = data.cliente;
+                    document.getElementById('res-emissao-ped').innerText = data.emissao_ped;
+                    document.getElementById('res-nf').innerText          = data.nf;
+                    document.getElementById('res-data_col').innerText    = data.data_col;
+                    document.getElementById('res-emissao-nf').innerText  = data.emissao_nf;
+                    document.getElementById('res-transp').innerText      = data.transp;
+                    document.getElementById('res-vendedor').innerText = data.vendedor;
+                    document.getElementById('res-producao').innerText = data.producao;
+                    
+                    resObs.innerText = "Dados carregados com sucesso do banco de dados TOTVS.";
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                resObs.innerText = "Erro de conexão com o servidor Python.";
+                alert("Certifique-se que o app.py está rodando no terminal!");
+            }
+        }
+
+        
+        document.getElementById('inputPedido').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') buscarPedido();
+        });
+    </script>
+</body>
+</html>

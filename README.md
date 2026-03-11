@@ -1,4 +1,4 @@
-# 📊 Central de Controle Full-Stack
+# 📊 Central de Controle Full-Stack Feito Por Vicenzo!
 
 > Painel interativo para monitoramento de dados e gestão de alertas, desenvolvido de forma independente.
 

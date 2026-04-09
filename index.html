@@ -4,252 +4,329 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Pedidos - Contuflex</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        
-          :root {
-                 --primary-color: #004a87;
-                 --secondary-color: #00a8e8;
-                   --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-                  --glass-bg: rgba(255, 255, 255, 0.85);
-                   --text-dark: #2d3436;
-}  
+        :root {
+            --primary-color: #003d5b;
+            --secondary-color: #00a8e8;
+            --success-green: #2ed573;
+            --danger-red: #ff4757;
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --text-dark: #2d3436;
+            --glass-white: rgba(255, 255, 255, 0.95);
+        }  
         
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--bg-gradient);
-            color: #333;
+            color: var(--text-dark);
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         header {
             width: 100%;
-            padding: 20px;
+            padding: 25px 0;
             text-align: center;
-            color: #2d3436;
+            animation: slideDown 0.5s ease;
         }
 
-        .nav-container {
-            width: 90%;
-            max-width: 1200px;
-            display: flex;
-            justify-content: flex-start;
+        .logo-box {
+            background: white;
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             margin-bottom: 10px;
         }
 
+        .nav-container {
+            width: 95%;
+            max-width: 1200px;
+            margin-bottom: 15px;
+        }
+
         .btn-inicio {
-            padding: 10px 20px;
-            background-color: #ffffff22;
-            color: #2d3436;
-            border: 1px solid white;
+            padding: 10px 18px;
+            background: var(--glass-white);
+            color: var(--primary-color);
+            border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px;
-            cursor: pointer;
             text-decoration: none;
             font-size: 14px;
+            font-weight: 600;
             transition: 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .btn-inicio:hover {
-            background-color: white;
-            color: #003d5b;
-        }
+        .btn-inicio:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
-    
         .search-container {
-            margin: 10px 0 30px 0;
+            margin-bottom: 35px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            z-index: 10;
         }
 
         input {
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            width: 280px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            width: 300px;
             font-size: 16px;
             outline: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transition: 0.3s;
         }
+
+        input:focus { border-color: var(--secondary-color); width: 340px; }
 
         .btn-search {
-            padding: 12px 25px;
-            background-color: #00a8e8;
+            padding: 15px 30px;
+            background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
+            transition: 0.3s;
         }
 
-        
+        .btn-search:hover { background: var(--secondary-color); transform: scale(1.05); }
+
+        /* Timeline de Status */
+        .status-timeline {
+            width: 95%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .status-step { text-align: center; flex: 1; position: relative; z-index: 2; opacity: 0.3; transition: 0.5s; }
+        .status-step.active { opacity: 1; font-weight: bold; }
+        .status-step i { font-size: 24px; margin-bottom: 8px; display: block; color: var(--primary-color); }
+        .status-step span { font-size: 12px; text-transform: uppercase; }
+
+        /* Grid do Dashboard */
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
-            width: 90%;
+            width: 95%;
             max-width: 1200px;
-            padding-bottom: 40px;
+            padding-bottom: 50px;
         }
 
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-            border-top: 4px solid #00a8e8;
+            background: var(--glass-white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-top: 5px solid #d1d8e0;
+            transition: 0.3s ease;
+            animation: fadeIn 0.6s ease forwards;
         }
 
+        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+
+        .card-largo { grid-column: span 2; }
+
         .card h3 {
-            margin: 0;
+            margin: 0 0 10px 0;
             font-size: 12px;
-            color: #003d5b;
+            color: #7f8c8d;
             text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .card p {
-            margin: 12px 0 0 0;
+            margin: 0;
             font-size: 18px;
-            font-weight: bold;
-            color: #444;
+            font-weight: 700;
+            color: var(--primary-color);
+            word-wrap: break-word;
         }
 
-        
-        .card-full {
-            grid-column: 1 / -1;
-            text-align: left;
-            padding: 25px;
-        }
+        .destaque-blue { color: var(--secondary-color) !important; font-size: 24px !important; }
 
-        .footer-tag {
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-            margin-top: 20px;
+        .card-full { grid-column: 1 / -1; text-align: center; border-top: none; background: rgba(0, 61, 91, 0.05); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .card-largo { grid-column: span 1; }
+            input { width: 100%; }
+            .search-container { flex-direction: column; width: 90%; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="background: white; display: inline-block; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Logo" width="160">
+        <div class="logo-box">
+            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Contuflex" width="160">
         </div>
-        <h1>Painel de Consulta de Pedidos</h1>
-        <h4>Feito Por Vicenzo!</h4>
+        <h1 style="margin: 10px 0 5px 0; color: var(--primary-color);">Rastreamento de Pedido</h1>
+        <p style="color: #636e72; margin: 0;">Logística & Expedição Inteligente</p>
     </header>
 
     <div class="nav-container">
-        <a href="inicio.html" class="btn-inicio">🏠 Voltar ao Início</a>
+        <a href="inicio.html" class="btn-inicio"><i class="fas fa-home"></i> Início</a>
     </div>
 
     <div class="search-container">
-        <input type="text" id="inputPedido" placeholder="Digite o Pedido (ex: PTBQU7)">
-        <button class="btn-search" onclick="buscarPedido()">Pesquisar</button>
+        <input type="text" id="inputPedido" placeholder="Digite o número do pedido...">
+        <button class="btn-search" onclick="buscarPedido()"><i class="fas fa-search"></i> PESQUISAR</button>
+    </div>
+
+    <div class="status-timeline" id="timeline">
+        <div class="status-step" id="step-pedido"><i class="fas fa-file-invoice"></i><span>Pedido Aberto</span></div>
+        <div class="status-step" id="step-faturado"><i class="fas fa-check-circle"></i><span>Faturado</span></div>
+        <div class="status-step" id="step-coletado"><i class="fas fa-truck-loading"></i><span>Coletado</span></div>
     </div>
 
     <div class="dashboard">
-        <div class="card">
-            <h3>Pedido</h3>
-            <p id="res-pedido">-</p>
+        <div class="card" style="border-top-color: var(--secondary-color);">
+            <h3><i class="fas fa-hashtag"></i> Pedido</h3>
+            <p id="res-pedido" class="destaque-blue">-</p>
         </div>
-        
         <div class="card">
-            <h3>Empresa</h3>
+            <h3><i class="fas fa-building"></i> Empresa</h3>
             <p id="res-empresa">-</p>
         </div>
-
         <div class="card">
-            <h3>Nota Fiscal</h3>
-            <p id="res-nf" style="color: #00a8e8;">-</p>
+            <h3><i class="fas fa-receipt"></i> Nota Fiscal</h3>
+            <p id="res-nf" style="color: var(--success-green);">-</p>
         </div>
-
-         
-
         <div class="card">
-            <h3>Emissão NF</h3>
+            <h3><i class="fas fa-calendar-check"></i> Emissão NF</h3>
             <p id="res-emissao-nf">-</p>
         </div>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>Cliente</h3>
-            <p id="res-cliente" style="font-size: 15px;">-</p>
+        <div class="card card-largo">
+            <h3><i class="fas fa-user-tie"></i> Cliente</h3>
+            <p id="res-cliente">-</p>
         </div>
-
-        <div class="card">
-            <h3>Emissão Pedido</h3>
-            <p id="res-emissao-ped">-</p>
-        </div>
-
-        <div class="card">
-            <h3>Transporte via</h3>
+        <div class="card card-largo">
+            <h3><i class="fas fa-shipping-fast"></i> Transportadora / Via</h3>
             <p id="res-transp">-</p>
         </div>
-          <div class="card">
-    <h3>Vendedor</h3>
-    <p id="res-vendedor" style="color: #00a8e8;">-</p>
-</div>
-<div class="card">
-    <h3>Progresso</h3>
-    <p id="res-producao" style="color: #00a8e8;">-</p>
-</div>
 
-<div class="card">
-            <h3>Status de coleta</h3>
-            <p id="res-data_col" style="color: #00a8e8;">-</p>
+        <div class="card">
+            <h3><i class="fas fa-calendar-alt"></i> Data do Pedido</h3>
+            <p id="res-emissao-ped">-</p>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-user-edit"></i> Vendedor</h3>
+            <p id="res-vendedor">-</p>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-clock"></i> Lead Time</h3>
+            <p id="res-producao">-</p>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-box"></i> Expedição</h3>
+            <p id="res-data_col">-</p>
         </div>
 
         <div class="card card-full">
-            <h3 style="text-align: center;">Status / Observação Interna</h3>
-            <p id="res-obs" style="font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
-                Digite um pedido para carregar as informações do banco TOTVS.
-            </p>
+            <p id="res-obs" style="font-weight: normal; font-size: 15px; color: #7f8c8d;">Insira um pedido para iniciar a consulta em tempo real no Protheus.</p>
         </div>
     </div>
 
-    <div class="footer-tag">Feito por Vicenzo! - Contuflex</div>
+    <div class="footer-tag">Sistema Desenvolvido por Vicenzo Henrique &bull; Contuflex 2026</div>
 
     <script>
+        function calcularDiferenca(dataIni, dataFim) {
+            if (!dataIni || dataIni === "-") return "-";
+            
+            const [d1, m1, a1] = dataIni.split('/');
+            const date1 = new Date(a1, m1 - 1, d1);
+            
+            let date2;
+            if (!dataFim || dataFim === "-" || dataFim === "Pendente") {
+                date2 = new Date(); 
+            } else {
+                const [d2, m2, a2] = dataFim.split('/');
+                date2 = new Date(a2, m2 - 1, d2);
+            }
+            
+            const diffTime = Math.abs(date2 - date1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays + (diffDays === 1 ? " dia" : " dias");
+        }
+
+        function atualizarTimeline(data) {
+         
+            document.querySelectorAll('.status-step').forEach(s => s.classList.remove('active'));
+            
+          
+            document.getElementById('step-pedido').classList.add('active');
+
+            if (data.nf && data.nf !== "Pendente") {
+                document.getElementById('step-faturado').classList.add('active');
+            }
+    
+            if (data.data_col && data.data_col.includes('/')) {
+                document.getElementById('step-coletado').classList.add('active');
+            }
+        }
+
         async function buscarPedido() {
             const pedidoInput = document.getElementById('inputPedido').value.toUpperCase();
             if (!pedidoInput) return;
 
             const resObs = document.getElementById('res-obs');
-            resObs.innerText = "Buscando no banco...";
+            resObs.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Acessando banco de dados TOTVS...';
 
             try {
                 const response = await fetch(`${window.location.origin}/pedido/${pedidoInput}`);
                 const data = await response.json();
 
                 if (data.erro) {
-                    alert("Pedido não encontrado!");
-                    resObs.innerText = "Erro: Pedido não localizado.";
+                    resObs.innerText = "⚠️ Pedido não localizado.";
+                    alert("Pedido inexistente ou excluído.");
                 } else {
-                   
                     document.getElementById('res-pedido').innerText      = data.pedido;
                     document.getElementById('res-empresa').innerText     = data.empresa;
                     document.getElementById('res-cliente').innerText     = data.cliente;
                     document.getElementById('res-emissao-ped').innerText = data.emissao_ped;
-                    document.getElementById('res-nf').innerText          = data.nf;
-                    document.getElementById('res-data_col').innerText    = data.data_col;
-                    document.getElementById('res-emissao-nf').innerText  = data.emissao_nf;
+                    document.getElementById('res-nf').innerText          = data.nf || 'Pendente';
+                    document.getElementById('res-emissao-nf').innerText  = data.emissao_nf || '-';
                     document.getElementById('res-transp').innerText      = data.transp;
-                    document.getElementById('res-vendedor').innerText = data.vendedor;
-                    document.getElementById('res-producao').innerText = data.producao;
-                    
-                    resObs.innerText = "Dados carregados com sucesso do banco de dados TOTVS.";
+                    document.getElementById('res-vendedor').innerText    = data.vendedor;
+
+                    const dias = calcularDiferenca(data.emissao_ped, data.emissao_nf);
+                    document.getElementById('res-producao').innerText = dias;
+
+                    const elDataCol = document.getElementById('res-data_col');
+                    const coletado = (data.data_col && data.data_col.includes('/'));
+                    elDataCol.innerText = coletado ? data.data_col : 'AGUARDANDO';
+                    elDataCol.style.color = coletado ? '#2ed573' : '#ff4757';
+
+                    atualizarTimeline(data);
+                    resObs.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success-green)"></i> Dados sincronizados com sucesso.';
                 }
             } catch (error) {
-                console.error("Erro:", error);
-                resObs.innerText = "Erro de conexão com o servidor Python.";
-                alert("Certifique-se que o app.py está rodando no terminal!");
+                resObs.innerText = "❌ Erro na comunicação com o servidor.";
             }
         }
 
-        
-        document.getElementById('inputPedido').addEventListener('keypress', function (e) {
+        document.getElementById('inputPedido').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') buscarPedido();
         });
     </script>

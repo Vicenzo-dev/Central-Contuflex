@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Coletas - Contuflex</title>
     <style>
-        
         :root {--bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);}
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg-gradient); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         header { width: 100%; padding: 20px; text-align: center; color: #2d3436; }
@@ -26,6 +25,8 @@
         td { padding: 10px 12px; border-bottom: 1px solid #f1f1f1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .row-item:hover { background-color: #f9f9f9; }
         .status-alerta { color: #ff4757; font-weight: bold; }
+        /* Estilo da nova coluna LOC */
+        .td-loc { font-weight: bold; color: #003d5b; background: #eef2f7; text-align: center; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -78,7 +79,7 @@
                 <tr>
                     <th style="width: 100px;">Emissão NF</th>
                     <th style="width: 100px;">Pedido</th>
-                    <th style="width: 150px;">Vendedor</th>
+                    <th style="width: 60px; text-align: center;">LOC</th> <th style="width: 150px;">Vendedor</th>
                     <th style="width: 100px;">NF</th>
                     <th>Cliente</th>
                     <th style="width: 150px;">Transporte</th>
@@ -147,6 +148,7 @@
             console.error("Erro ao carregar dados do Excel:", e);
         }
     }
+    
     function toggleGrafico() {
     const g = document.getElementById('containerGrafico');
     if (g.style.display === "none") {
@@ -219,7 +221,7 @@
     
     async function carregarDados() {
         const body = document.getElementById('corpo-tabela');
-        body.innerHTML = "<tr><td colspan='8' style='text-align:center'>Carregando dados...</td></tr>";
+        body.innerHTML = "<tr><td colspan='9' style='text-align:center'>Carregando dados...</td></tr>"; // Colspan atualizado para 9
         
         try {
             const di = document.getElementById('dataInicio').value;
@@ -250,7 +252,7 @@
 
         } catch (e) {
             console.error("Erro ao carregar:", e);
-            body.innerHTML = "<tr><td colspan='8' style='text-align:center; color:red'>Erro ao carregar dados.</td></tr>";
+            body.innerHTML = "<tr><td colspan='9' style='text-align:center; color:red'>Erro ao carregar dados.</td></tr>";
         }
     }
 
@@ -271,7 +273,6 @@ function toggleFiltro(tipo, valor, btn) {
         fStatus = jaAtivo ? "" : valor;
         btn.classList.toggle('btn-active', !jaAtivo);
 
-        
         if (valor === 'COLETADO' && !jaAtivo) {
             filtroDataPor = 'status';
         } else {
@@ -291,34 +292,38 @@ function toggleFiltro(tipo, valor, btn) {
     renderizar();
 }
 
-    
     function renderizar() {
         const busca = document.getElementById('inputBusca').value.toUpperCase();
         const body = document.getElementById('corpo-tabela');
-        
         
         if (!dadosOriginais) return;
 
         const filtrados = dadosOriginais.filter(p => {
             
-            const txt = `${p.pedido} ${p.cliente} ${p.vendedor} ${p.nf} ${p.transp}`.toUpperCase();
+            // TRATAMENTO DE BUSCA À PROVA DE FALHAS:
+            const p_ped = p.pedido || "";
+            const p_cli = p.cliente || "";
+            const p_ven = p.vendedor || "";
+            const p_nf  = p.nf || "";
+            const p_tra = p.transp || "";
+            const p_loc = p.localizacao || ""; // Evita erro se vier null
+
+            const txt = `${p_ped} ${p_cli} ${p_ven} ${p_nf} ${p_tra} ${p_loc}`.toUpperCase();
             const bOk = !busca || txt.includes(busca);
             
             const temData = (p.data_col && p.data_col.includes('/')); 
             const sValExibicao = temData ? 'COLETADO' : 'AGUARDANDO';
             const sOk = !fStatus || sValExibicao === fStatus;
 
-            const tVal = (p.transp || "").toUpperCase().trim();
+            const tVal = p_tra.toUpperCase().trim();
             const eTransportadora = (tVal !== "NOSSO CARRO" && tVal !== "RETIRA" && tVal !== "");
 
-           
             if (filtrarAgendadas && eTransportadora) {
                 const protocolo = String(p.protoc_coleta || "").trim().toLowerCase();
                 const temProtocolo = protocolo !== "" && protocolo !== "none" && protocolo !== "undefined";
                 if (!temProtocolo) return false; 
             }
 
-            
             let tOk = true;
             if (fTransp === "OUTROS") {
                 tOk = eTransportadora;
@@ -329,7 +334,6 @@ function toggleFiltro(tipo, valor, btn) {
             return bOk && sOk && tOk;
         });
 
-        
         let html = "";
         filtrados.forEach(p => {
             const corStatus = (p.data_col && p.data_col.includes('/')) ? '#2ed573' : '#ff4757';
@@ -337,6 +341,9 @@ function toggleFiltro(tipo, valor, btn) {
             html += `<tr class="row-item">
                 <td style="font-weight:bold">${p.emissao || ''}</td>
                 <td>${p.pedido || ''}</td>
+
+                <td class="td-loc">${p.localizacao || '---'}</td>
+
                 <td>${p.vendedor || ''}</td>
                 <td style="color:#2ed573; font-weight:bold">${p.nf || ''}</td>
                 <td title="${p.cliente}">${p.cliente || ''}</td>
@@ -346,18 +353,15 @@ function toggleFiltro(tipo, valor, btn) {
             </tr>`;
         });
 
-        body.innerHTML = html || "<tr><td colspan='8' style='text-align:center'>Nenhum resultado encontrado.</td></tr>";
-        
+        body.innerHTML = html || "<tr><td colspan='9' style='text-align:center'>Nenhum resultado encontrado.</td></tr>"; // Colspan 9
         
         document.getElementById('count-alerta').innerText = filtrados.length;
-        
         
         if (typeof atualizarGrafico === "function") {
             atualizarGrafico(filtrados);
         }
     }
 
-    
    window.onload = () => {
     carregarDados(); 
 };

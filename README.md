@@ -1,9 +1,9 @@
-# 📊 Central de Controle Full-Stack (Contuflex)
+# 📊 Central de Controle Full-Stack (VzFlex)
 
 > Solução inteligente para monitoramento de dados em tempo real, integrada ao ERP TOTVS.
 
 ## 📝 Sobre o Projeto
-Este projeto foi desenvolvido de forma independente para a **Contuflex**, com o objetivo de otimizar a gestão de indicadores e alertas. A aplicação atua como uma camada de inteligência sobre o **ERP TOTVS**, extraindo dados diretamente do banco SQL para oferecer uma visão clara e imediata da operação.
+Este projeto foi desenvolvido de forma independente para a **VzFlex**, com o objetivo de otimizar a gestão de indicadores e alertas. A aplicação atua como uma camada de inteligência sobre o **ERP TOTVS**, extraindo dados diretamente do banco SQL para oferecer uma visão clara e imediata da operação.
 
 Com esta implementação, conseguimos um controle muito mais preciso: tudo o que é atualizado no sistema oficial reflete instantaneamente no painel, eliminando processos manuais e atrasos na informação.
 

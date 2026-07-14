@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, request, render_template, send_file
+from flask import Flask, jsonify, send_from_directory, request , render_template
 from flask_cors import CORS
 import pyodbc
 from datetime import datetime
@@ -6,15 +6,26 @@ import pandas as pd
 import os
 import qrcode
 import io 
+from flask import send_file
 import requests
 from io import StringIO
+from flask import render_template_string
 import time
+from flask import Flask, jsonify, request
+from datetime import datetime
+import openpyxl
+from openpyxl import Workbook
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-CONN_STR = os.environ.get("DB_CONNECTION_STRING", "DSN=SeuERP;UID=usuario_generico;PWD=senha_segura;") 
-ARQUIVO_EXCEL = os.environ.get("CAMINHO_EXCEL_PRODUCAO", "caminho/generico/dados_logistica/pedidos.xlsm")  
+conn_str = "DSN=SEU_DSN;UID=seu_usuario;PWD=sua_senha;" 
+ARQUIVO_EXCEL = 'caminho/para/seu/Entrega_Pedido_BDados.xlsm'  
+
+STATUS_DATA = {
+    "ultima_atualizacao": ""
+}
 
 def formatar(dt):
     if isinstance(dt, datetime):
@@ -45,11 +56,30 @@ def processar_estatisticas_excel(inicio, fim):
         print(f"Erro ao processar Excel: {e}")
         return 0, 0
    
-    
+@app.route('/api/status-pbi', methods=['GET'])
+def get_status_pbi():
+    return jsonify(STATUS_DATA)
+
+@app.route('/api/webhook-pbi', methods=['POST'])
+def webhook_pbi():
+    global STATUS_DATA
+    try:
+        agora = datetime.now()
+        timestamp_formatado = agora.strftime('%d/%m/%y, %H:%M:%S')
+        
+        STATUS_DATA["ultima_atualizacao"] = timestamp_formatado
+        
+        print(f"✅ Power BI atualizado em: {timestamp_formatado}")
+        return jsonify({"status": "sucesso", "data": timestamp_formatado}), 200
+    except Exception as e:
+        print(f"❌ Erro no webhook: {e}")
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+
 @app.route('/pedido/qrcode/<id_pedido>', methods=['GET'])
 def gerar_qrcode(id_pedido):
-    host_base = request.host_url.rstrip('/')
-    base_url = f"{host_base}/pedido_detalhes.html?id={id_pedido}"
+ 
+    base_url = f"http://SEU_IP_LOCAL:5000/pedido_detalhes.html?id={id_pedido}"
     
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(base_url)
@@ -63,7 +93,6 @@ def gerar_qrcode(id_pedido):
     
     return send_file(img_io, mimetype='image/png')
 
-
 @app.route('/pedidos/status_excel', methods=['GET'])
 def get_status_excel():
     data_inicio = request.args.get('inicio')
@@ -76,7 +105,6 @@ def get_status_excel():
         'atrasado': atrasado
     })
 
-
 @app.route('/pedidos/pendentes_coleta', methods=['GET'])
 def get_pendentes_coleta():
     data_inicio = request.args.get('inicio')
@@ -84,9 +112,9 @@ def get_pendentes_coleta():
     tipo_data = request.args.get('tipo_data', 'emissao') 
     
     try:
-        conn = pyodbc.connect(CONN_STR)
+        conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM dbo.view_expedicao_pedidos('', '', '')")
+        cursor.execute("SELECT * FROM dbo.FN_0101_VEN_EXPEDICAO('', '', '')")
         rows = cursor.fetchall()
 
         pendentes = []
@@ -94,13 +122,14 @@ def get_pendentes_coleta():
             try:
                 val_12 = str(row[12]).strip() if len(row) > 12 else ""
                 val_15 = str(row[15]).strip() if len(row) > 15 else ""
+
                 protocolo = str(row[13]).strip() if len(row) > 13 else ""
                 
                 pedido   = str(row[5]).strip()
                 vendedor = str(row[1]).strip()
                 nf       = str(row[3]).strip()
                 cliente  = str(row[9]).strip() if len(row) > 9 else str(row[2])
-                transp   = str(row[7]).strip().upper() if (len(row) > 7 and row[7] is not None) else ""
+                transp = str(row[7]).strip().upper() if (len(row) > 7 and row[7] is not None) else ""
               
                 dt_col_final = val_12 if val_12 and val_12.lower() != "none" else val_15
                 data_emissao = row[2] 
@@ -113,11 +142,11 @@ def get_pendentes_coleta():
                 else:
                     if isinstance(data_emissao, datetime):
                         alvo_filtro = data_emissao.strftime('%Y-%m-%d')
-
+                
                 if data_inicio and data_fim:
                     if not alvo_filtro or not (data_inicio <= alvo_filtro <= data_fim):
                         continue
-
+               
                 if nf != "" and nf != "None":
                     pendentes.append({
                         "pedido": pedido,
@@ -127,16 +156,14 @@ def get_pendentes_coleta():
                         "transp": transp,
                         "data_col": dt_col_final,
                         "producao": "FATURADO",
-                        "protoc_coleta": protocolo,
+                        "protoc_coleta": protocolo ,
                         "emissao": formatar(data_emissao)
                     })      
             except: 
                 continue
-
         try:
-            SHEET_ID = os.environ.get("GOOGLE_SHEET_ID_1", "ID_DA_PLANILHA_A_OCULTAR")
-            SHEET_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=36679356"
-            
+        
+            SHEET_URL = "https://docs.google.com/spreadsheets/d/SEU_ID_DA_PLANILHA/export?format=csv&gid=SEU_GID"
             res_sheets = requests.get(SHEET_URL, timeout=15)
             
             if res_sheets.status_code == 200:
@@ -169,7 +196,7 @@ def get_pendentes_coleta():
                 for p in pendentes: p['localizacao'] = "Erro Conexão"
 
         except Exception as e:
-            print(f"Log de erro interno sob controle: {e}") 
+            print(f"DEBUG_ERRO: {e}") 
             for p in pendentes: p['localizacao'] = "OFFLINE"
         
         return jsonify(pendentes)
@@ -178,16 +205,13 @@ def get_pendentes_coleta():
     finally:
         if 'conn' in locals(): conn.close()
 
-
 @app.route('/<path:filename>')
 def custom_static(filename):
     return send_from_directory('.', filename)
 
-
 @app.route('/')
 def index():
     return send_from_directory('.', 'inicio.html')    
-
 
 @app.route('/conferir_geral')
 def conferir_geral():
@@ -197,13 +221,14 @@ def conferir_geral():
         ano_busca = request.args.get('ano', '2026')
         
         timestamp = int(time.time())
-        PUB_SHEET_TOKEN = os.environ.get("GOOGLE_PUB_SHEET_TOKEN", "TOKEN_DE_PUBLICACAO_A_OCULTAR")
-        url_sheets = f"https://docs.google.com/spreadsheets/d/e/{PUB_SHEET_TOKEN}/pub?gid=919266762&single=true&output=csv&cache_bust={timestamp}"
+        
+        url_sheets = f"https://docs.google.com/spreadsheets/d/e/SEU_LINK_PUBLICADO/pub?gid=SEU_GID&single=true&output=csv&cache_bust={timestamp}"
         res = requests.get(url_sheets)
         
+        from io import StringIO 
         df_sheets = pd.read_csv(StringIO(res.text))
         
-        df_sheets['dt_obj'] = pd.to_datetime(df_sheets.iloc[:, 1], dayfirst=True, errors='coerce')
+        df_sheets['dt_obj'] = pd.to_datetime(df_sheets.iloc[:, 0], dayfirst=True, errors='coerce')
         df_sheets = df_sheets.dropna(subset=['dt_obj'])
         
         if dia_busca and dia_busca.strip() != "":
@@ -216,17 +241,20 @@ def conferir_geral():
         if df_sheets.empty:
             return render_template('indexnf.html', tabelas=[])
             
-        df_sheets['numero_nf'] = df_sheets.iloc[:, 3].astype(str).str.strip()
-        df_sheets['NF_JOIN'] = pd.to_numeric(df_sheets['numero_nf'], errors='coerce')
-        df_sheets['tipo'] = df_sheets.iloc[:, 6].fillna('NÃO INFORMADO').astype(str).str.upper().str.strip()
-        
+        df_sheets['NF_PLANILHA'] = df_sheets.iloc[:, 2].astype(str).str.strip()
+        df_sheets['NF_JOIN'] = pd.to_numeric(df_sheets['NF_PLANILHA'], errors='coerce')
+        df_sheets['TIPO_PLANILHA'] = df_sheets.iloc[:, 5].fillna('NÃO INFORMADO').astype(str).str.upper().str.strip()
         df_sheets = df_sheets.dropna(subset=['NF_JOIN'])
         
-        conn = pyodbc.connect(CONN_STR)
+        conn = pyodbc.connect(conn_str)
         query_unificada = """
-        SELECT campo_id_nota AS NOTA, campo_data_emissao FROM tabela_documentos_fiscais_a (NOLOCK) WHERE flag_deletado = '' AND campo_data_digitacao >= CONVERT(VARCHAR, GETDATE() - 120, 112)
+        SELECT F1_DOC AS NOTA, F1_EMISSAO FROM SF1010 (NOLOCK) WHERE D_E_L_E_T_ = '' AND F1_DTDIGIT >= CONVERT(VARCHAR, GETDATE() - 120, 112)
         UNION ALL
-        SELECT campo_id_nota AS NOTA, campo_data_emissao FROM tabela_documentos_fiscais_b (NOLOCK) WHERE flag_deletado = '' AND campo_data_digitacao >= CONVERT(VARCHAR, GETDATE() - 120, 112)
+        SELECT F1_DOC AS NOTA, F1_EMISSAO FROM SF1070 (NOLOCK) WHERE D_E_L_E_T_ = '' AND F1_DTDIGIT >= CONVERT(VARCHAR, GETDATE() - 120, 112)
+        UNION ALL
+        SELECT F1_DOC AS NOTA, F1_EMISSAO FROM SF1080 (NOLOCK) WHERE D_E_L_E_T_ = '' AND F1_DTDIGIT >= CONVERT(VARCHAR, GETDATE() - 120, 112)
+        UNION ALL
+        SELECT F1_DOC AS NOTA, F1_EMISSAO FROM SF1090 (NOLOCK) WHERE D_E_L_E_T_ = '' AND F1_DTDIGIT >= CONVERT(VARCHAR, GETDATE() - 120, 112)
         """
         df_sql = pd.read_sql(query_unificada, conn)
         conn.close()
@@ -234,47 +262,47 @@ def conferir_geral():
         df_sql['NOTA'] = pd.to_numeric(df_sql['NOTA'], errors='coerce')
         comparativo = pd.merge(df_sheets, df_sql, left_on='NF_JOIN', right_on='NOTA', how='left')
         
-        comparativo['status'] = comparativo['NOTA'].apply(
-            lambda x: 'Lançada + Recebida' if pd.notnull(x) else 'Pendente no ERP'
+        comparativo['STATUS_FINAL'] = comparativo['NOTA'].apply(
+            lambda x: 'Lançada + Recebida' if pd.notnull(x) else 'Pendente no Totvs'
         )
         
-        comparativo['data_recebimento'] = comparativo['dt_obj'].dt.strftime('%d/%m/%Y')
-        comparativo['data_emissao'] = pd.to_datetime(comparativo['campo_data_emissao'], errors='coerce').dt.strftime('%d/%m/%Y').fillna('-')
-        comparativo['fornecedor'] = comparativo.iloc[:, 4].fillna('-')
+        comparativo['DATA_REC_EXIBIR'] = comparativo['dt_obj'].dt.strftime('%d/%m/%Y')
+        comparativo['EMISSAO_SQL_EXIBIR'] = pd.to_datetime(comparativo['F1_EMISSAO'], errors='coerce').dt.strftime('%d/%m/%Y').fillna('-')
+        comparativo['FORNECEDOR_PLANILHA'] = comparativo.iloc[:, 3].fillna('-')
 
         tabelas_limpas = comparativo.to_dict(orient='records')
         return render_template('indexnf.html', tabelas=tabelas_limpas)
 
     except Exception as e:
-        print(f"Erro no processamento interno.")
-        return f"Erro ao processar requisição."
+        import traceback
+        print(traceback.format_exc())
+        return f"Erro: {str(e)}"
     
-
 @app.route('/pedido/detalhes_qr/<id_pedido>', methods=['GET'])
 def detalhes_qr_final(id_pedido):
     try:
-        conn = pyodbc.connect(CONN_STR)
+        conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
         
         query_pv = """
         SELECT 
-            TRIM(p.id_pedido) AS PEDIDO, 
-            TRIM(c.nome_cliente) AS CLIENTE, 
-            TRIM(v.nome_vendedor) AS VENDEDOR,
+            TRIM(SC5.C5_NUM) AS PEDIDO, 
+            TRIM(SA1.A1_NOME) AS CLIENTE, 
+            TRIM(SA3.A3_NOME) AS VENDEDOR,
             CASE 
-                WHEN p.codigo_transp = '000001' THEN 'RETIRA' 
-                WHEN p.codigo_transp = '000005' THEN 'NOSSO CARRO'
+                WHEN SC5.C5_TRANSP = '000001' THEN 'RETIRA' 
+                WHEN SC5.C5_TRANSP = '000005' THEN 'NOSSO CARRO'
                 ELSE 'TRANSPORTADORA' 
             END AS TRANSPORTE
-        FROM tabela_pedidos_venda p (NOLOCK)
-        INNER JOIN tabela_clientes c (NOLOCK) ON p.id_cliente = c.id_codigo AND p.loja_cliente = c.id_loja
-        INNER JOIN tabela_vendedores v (NOLOCK) ON p.id_vendedor = v.id_codigo
-        WHERE p.id_pedido = ? AND p.flag_deletado = ''
+        FROM SC5010 SC5 (NOLOCK)
+        INNER JOIN SA1010 SA1 (NOLOCK) ON SC5.C5_CLIENTE = SA1.A1_COD AND SC5.C5_LOJACLI = SA1.A1_LOJA
+        INNER JOIN SA3010 SA3 (NOLOCK) ON SC5.C5_VEND1 = SA3.A3_COD
+        WHERE SC5.C5_NUM = ? AND SC5.D_E_L_E_T_ = ''
         """
         cursor.execute(query_pv, (id_pedido,))
         row_p = cursor.fetchone()
         
-        cursor.execute("SELECT * FROM dbo.view_expedicao_pedidos('', '', '') WHERE PEDIDO = ?", (id_pedido,))
+        cursor.execute("SELECT * FROM dbo.FN_0101_VEN_EXPEDICAO('', '', '') WHERE PEDIDO = ?", (id_pedido,))
         row_e = cursor.fetchone()
 
         if row_p:
@@ -316,92 +344,200 @@ def detalhes_qr_final(id_pedido):
         return jsonify({"erro": "Pedido não encontrado"}), 404
 
     except Exception as e:
-        return jsonify({"erro": "Erro interno no servidor"}), 500
+        print(f"Erro no servidor: {e}")
+        return jsonify({"erro": str(e)}), 500
     finally:
-        if 'conn' in locals(): conn.close()
+        if 'conn' in locals():
+            conn.close()
 
-
-def formatar_data_sistema_legado(data_raw):
+def formatar_data_protheus(data_raw):
     if not data_raw or str(data_raw).strip() in ["None", ""]:
         return "-"
-    
     d_str = str(data_raw).strip()
-    
     if len(d_str) == 8 and d_str.isdigit():
         return f"{d_str[6:8]}/{d_str[4:6]}/{d_str[0:4]}"
-    
     try:
         return data_raw.strftime('%d/%m/%Y')
     except:
         return d_str            
 
-
-@app.route('/pedido/<id_pedido>', methods=['GET'])
-def get_pedido(id_pedido):
+@app.route('/pedido/<termo_busca>', methods=['GET'])
+def get_pedido(termo_busca):
     try:
-        conn = pyodbc.connect(CONN_STR)
+        import datetime
+        import openpyxl
+        
+        conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
         
-        query_pv = """
+        termo_limpo = termo_busca.strip().upper()
+        termo_like = f"%{termo_limpo}%"
+        
+        sql_base = """
         SELECT 
-            p.id_empresa_filial AS EMPRESA, 
-            TRIM(p.id_pedido) AS PEDIDO, 
-            TRIM(c.nome_cliente) AS CLIENTE, 
-            p.data_emissao_pedido AS EMISSAO_PED,
-            TRIM(v.nome_vendedor) AS VENDEDOR,
-            CASE 
-                WHEN p.codigo_transp = '000001' THEN 'RETIRA' 
-                WHEN p.codigo_transp = '000005' THEN 'NOSSO CARRO'
-                ELSE 'TRANSPORTADORA' 
-            END AS TIPO_TRANSP
-        FROM tabela_pedidos_venda p (NOLOCK)
-        INNER JOIN tabela_clientes c (NOLOCK) ON p.id_cliente = c.id_codigo AND p.loja_cliente = c.id_loja
-        INNER JOIN tabela_vendedores v (NOLOCK) ON p.id_vendedor = v.id_codigo
-        WHERE p.id_pedido = ? AND p.flag_deletado = ''
+            SC5.C5_FILIAL, 
+            TRIM(SC5.C5_NUM) AS PEDIDO, 
+            TRIM(SA1.A1_NOME) AS CLIENTE, 
+            SC5.C5_EMISSAO, 
+            TRIM(SA3.A3_NOME) AS VENDEDOR, 
+            TRIM(SC5.C5_TRANSP) AS C5_TRANSP,
+            ISNULL(TRIM(SA4.A4_NOME), '') AS NOME_TRANSP,
+            EXPED.*
+        FROM SC5010 SC5 (NOLOCK)
+        INNER JOIN SA1010 SA1 (NOLOCK) ON SC5.C5_CLIENTE = SA1.A1_COD 
+        INNER JOIN SA3010 SA3 (NOLOCK) ON SC5.C5_VEND1 = SA3.A3_COD
+        LEFT JOIN SA4010 SA4 (NOLOCK) ON SC5.C5_TRANSP = SA4.A4_COD AND SA4.D_E_L_E_T_ = ''
+        OUTER APPLY (
+            SELECT * FROM dbo.FN_0101_VEN_EXPEDICAO('', '', '') 
+            WHERE PEDIDO = SC5.C5_NUM
+        ) AS EXPED
+        WHERE SC5.D_E_L_E_T_ = ''
         """
-        cursor.execute(query_pv, (id_pedido,))
-        row_p = cursor.fetchone()
 
-        cursor.execute("SELECT * FROM dbo.view_expedicao_pedidos('', '', '') WHERE PEDIDO = ?", (id_pedido,))
-        row_e = cursor.fetchone()
+        if len(termo_limpo) <= 6 and any(char.isdigit() for char in termo_limpo) and any(char.isalpha() for char in termo_limpo):
+            query = sql_base + " AND SC5.C5_NUM = ? ORDER BY SC5.C5_EMISSAO DESC"
+            parametros = [termo_limpo]
+        else:
+            data_limite = (datetime.date.today() - datetime.timedelta(days=365*2)).strftime('%Y%m%d')
+            query = sql_base + """ 
+                AND SC5.C5_EMISSAO >= ? 
+                AND (SA1.A1_NOME LIKE ? OR SA3.A3_NOME LIKE ? OR SA4.A4_NOME LIKE ? OR SC5.C5_TRANSP LIKE ? OR SC5.C5_NUM LIKE ?)
+                ORDER BY SC5.C5_EMISSAO DESC
+            """
+            parametros = [data_limite, termo_like, termo_like, termo_like, termo_like, termo_like]
+        
+        cursor.execute(query, parametros)
+        rows = cursor.fetchall()
+        
+        if not rows:
+            return jsonify({"erro": "Nenhum pedido ou cliente localizado"}), 404
 
-        if row_p:
+        resultados = []
+
+        for row in rows:
             dt_final = "AGUARDANDO"
-            nome_transp_exp = "--"
+            nome_transp_exp = ""
             nf_num = "Pendente"
             nf_data = "-"
 
-            if row_e:
-                val_12 = str(row_e[12]).strip() if row_e[12] else ""
-                val_15 = str(row_e[15]).strip() if len(row_e) > 15 and row_e[15] else ""
+            if len(row) > 7 and row[10]: 
+                val_12 = str(row[19]).strip() if len(row) > 19 and row[19] else ""
+                val_15 = str(row[22]).strip() if len(row) > 22 and row[22] else ""
                 raw_col = val_12 if val_12 and val_12.lower() != "none" else val_15
-                dt_final = formatar_data_sistema_legado(raw_col)
+                dt_final = formatar_data_protheus(raw_col)
                 
-                nome_transp_exp = str(row_e[7]).strip() if row_e[7] else "--"
-                nf_num = str(row_e[3]).strip()
-                nf_data = formatar_data_sistema_legado(row_e[2]) 
+                nome_transp_exp = str(row[14]).strip() if len(row) > 14 and row[14] else ""
+                if nome_transp_exp == "--" or nome_transp_exp.lower() == "none":
+                    nome_transp_exp = ""
+                nf_num = str(row[10]).strip()
+                nf_data = formatar_data_protheus(row[9])
 
-            data = {
-                "empresa":     row_p[0],
-                "pedido":      row_p[1],
-                "cliente":     row_p[2],
-                "emissao_ped": formatar_data_sistema_legado(row_p[3]),
-                "vendedor":    row_p[4],
-                "transp":      f"{row_p[5]} | {nome_transp_exp}",
+            codigo_transp = row[5]
+            nome_transp_protheus = row[6]
+            
+            nome_exibicao = nome_transp_protheus if nome_transp_protheus else nome_transp_exp
+            if not nome_exibicao:
+                nome_exibicao = "NOSSO CARRO" if not codigo_transp else f"TRANSPORTE {codigo_transp}"
+
+            texto_transp_final = f"{nome_exibicao} | {codigo_transp}" if codigo_transp else f"{nome_exibicao} | --"
+
+            pedido_data = {
+                "empresa":     row[0],
+                "pedido":      row[1],
+                "cliente":     row[2],
+                "emissao_ped": formatar_data_protheus(row[3]),
+                "vendedor":    row[4],
+                "transp":      texto_transp_final,
+                "C5_TRANSP":   texto_transp_final,
                 "data_col":    dt_final if dt_final else "AGUARDANDO",
                 "nf":          nf_num,
                 "emissao_nf":  nf_data,
-                "producao":    "-" 
+                "producao":    "-",
+                "localizacao": "---"
             }
-            return jsonify(data)
+            resultados.append(pedido_data)
+
+     
+        caminho_json = 'caminho/para/PedidosLoc.json'
+        mapa_loc = {}
         
-        return jsonify({"erro": "Pedido não encontrado"}), 404
+        if os.path.exists(caminho_json):
+            try:
+                import json
+                with open(caminho_json, 'r', encoding='utf-8') as f:
+                    mapa_loc = json.load(f)
+            except Exception as e:
+                print(f"Erro rápido ao ler JSON de Localizações: {e}")
+
+        for p in resultados:
+            cod_sistema = str(p.get('pedido', '')).strip().upper()
+            
+            if cod_sistema in mapa_loc:
+                dados_json = mapa_loc[cod_sistema]
+                loc_salva = str(dados_json.get('localizacao', '---')).strip()
+                p['localizacao'] = loc_salva if loc_salva and loc_salva != '-' else '---'
+                
+                conf_salvo = str(dados_json.get('conferente', '---')).strip()
+                p['conferente'] = conf_salvo if conf_salvo and conf_salvo != '-' else '---'
+                
+                data_salva = str(dados_json.get('data', '')).strip()
+                hora_salva = str(dados_json.get('hora', '')).strip()
+                if data_salva and data_salva != '-':
+                    p['data_loc'] = f"{data_salva} às {hora_salva}"
+                else:
+                    p['data_loc'] = '---'
+            else:
+                p['localizacao'] = "---"
+                p['conferente'] = "---"
+                p['data_loc'] = "---"
+        
+        return jsonify(resultados)
 
     except Exception as e:
-        return jsonify({"erro": "Erro interno no servidor"}), 500
+        print(f"Erro no servidor: {e}")
+        return jsonify({"erro": str(e)}), 500
     finally:
         if 'conn' in locals(): conn.close()
 
+@app.route('/api/finalizar_pedido', methods=['POST'])
+def finalizar_pedido():
+    try:
+        import json
+        import os
+        
+        dados = request.json
+       
+        caminho_json = 'caminho/para/PedidosLoc.json'
+        
+        pedido_num = str(dados.get('pedido', '')).strip().upper()
+        
+        if not pedido_num or pedido_num == '-':
+            return jsonify({"erro": "Número de pedido inválido."}), 400
+
+        banco_dados = {}
+        if os.path.exists(caminho_json):
+            try:
+                with open(caminho_json, 'r', encoding='utf-8') as f:
+                    banco_dados = json.load(f)
+            except json.JSONDecodeError:
+                banco_dados = {}
+
+        banco_dados[pedido_num] = {
+            "localizacao": dados.get('localizacao', '-'),
+            "conferente": dados.get('conferente', '-'),
+            "data": dados.get('data', '-'),
+            "hora": dados.get('hora', '-'),
+            "transportadora": dados.get('transportadora', '-')
+        }
+
+        with open(caminho_json, 'w', encoding='utf-8') as f:
+            json.dump(banco_dados, f, ensure_ascii=False, indent=4)
+            
+        return jsonify({"status": "sucesso", "mensagem": "Dados salvos no JSON com sucesso!"}), 200
+
+    except Exception as e:
+        print(f"Erro ao salvar JSON: {str(e)}")
+        return jsonify({"erro": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

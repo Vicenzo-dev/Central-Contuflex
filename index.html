@@ -6,6 +6,11 @@
     <title>Consulta de Pedidos - Contuflex</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Biblioteca Flatpickr para o Calendário igual ao da foto -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+    
     <style>
         :root {
             --primary-color: #003d5b;
@@ -26,14 +31,12 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
         header {
             width: 100%;
-            padding: 25px 0;
+            padding: 25px 0 10px 0;
             text-align: center;
-            animation: slideDown 0.5s ease;
         }
 
         .logo-box {
@@ -49,6 +52,9 @@
             width: 95%;
             max-width: 1200px;
             margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .btn-inicio {
@@ -61,30 +67,157 @@
             font-size: 14px;
             font-weight: 600;
             transition: 0.3s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .btn-inicio:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .badge-total {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
 
-        .search-container {
-            margin-bottom: 35px;
+        .panel-container {
+            background: var(--glass-white);
+            width: 95%;
+            max-width: 1200px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .filters {
             display: flex;
-            gap: 12px;
-            z-index: 10;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
         }
 
-        input {
+        .filters input[type="text"] {
+            padding: 12px 15px;
+            border: 2px solid #00a8e8;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            width: 300px;
+        }
+
+        .filters input#filtroDataLocal {
+            padding: 12px 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 600;
+            background: white;
+            width: 280px; /* Aumentado para exibir o range completo confortavelmente */
+            cursor: pointer;
+        }
+
+        .filter-btn {
+            padding: 10px 15px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.5; 
+        }
+        
+        .filter-btn:hover { opacity: 0.8; }
+        
+        .filter-btn.ativo {
+            opacity: 1;
+            border-color: #2d3436;
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-limpar { background: #95a5a6; opacity: 1 !important; }
+        .bg-carro { background: var(--primary-color); }
+        .bg-retira { background: var(--secondary-color); }
+        .bg-transp { background: #34495e; }
+        .bg-correios { background: #f39c12; }
+        .bg-aguardando { background: var(--danger-red); }
+        .bg-expedido { background: var(--success-green); }
+        .bg-com-nf { background: #20bf6b; } 
+        .bg-sem-nf { background: #fa8231; } 
+
+        .acoes-lista {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #d1d8e0;
+        }
+
+        .btn-imprimir {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: fixed; 
+        }
+
+        th {
+            background: rgba(0, 61, 91, 0.05);
+            color: var(--primary-color);
+            padding: 12px 10px;
+            text-transform: uppercase;
+            font-size: 11px;
+            border-bottom: 2px solid var(--primary-color);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #ecf0f1;
+            color: #2c3e50;
+            white-space: nowrap;      
+            overflow: hidden;          
+            text-overflow: ellipsis;   
+            max-width: 180px;      
+        }
+
+        tr.linha-pedido:hover td { background: #e8f4fd; }
+
+        .search-container { margin-bottom: 30px; display: flex; gap: 12px; }
+
+        .search-container input {
             padding: 15px 20px;
             border-radius: 10px;
-            border: 2px solid transparent;
-            width: 300px;
+            border: 2px solid var(--primary-color);
+            width: 400px;
             font-size: 16px;
             outline: none;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
-
-        input:focus { border-color: var(--secondary-color); width: 340px; }
 
         .btn-search {
             padding: 15px 30px;
@@ -94,83 +227,203 @@
             border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 15px;
             transition: 0.3s;
         }
 
-        .btn-search:hover { background: var(--secondary-color); transform: scale(1.05); }
+        .btn-search:hover { background: var(--secondary-color); }
 
-        /* Timeline de Status */
         .status-timeline {
             width: 95%;
             max-width: 1200px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            position: relative;
+            margin-bottom: 25px;
             background: white;
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        .status-step { text-align: center; flex: 1; position: relative; z-index: 2; opacity: 0.3; transition: 0.5s; }
+        .status-step { text-align: center; flex: 1; opacity: 0.25; transition: 0.4s; }
         .status-step.active { opacity: 1; font-weight: bold; }
-        .status-step i { font-size: 24px; margin-bottom: 8px; display: block; color: var(--primary-color); }
-        .status-step span { font-size: 12px; text-transform: uppercase; }
+        .status-step i { font-size: 22px; margin-bottom: 6px; display: block; color: var(--primary-color); }
+        .status-step span { font-size: 11px; text-transform: uppercase; }
 
-        /* Grid do Dashboard */
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
             width: 95%;
             max-width: 1200px;
-            padding-bottom: 50px;
+            padding-bottom: 60px;
         }
 
         .card {
             background: var(--glass-white);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
             border-top: 5px solid #d1d8e0;
-            transition: 0.3s ease;
-            animation: fadeIn 0.6s ease forwards;
         }
 
-        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-
         .card-largo { grid-column: span 2; }
+        .card h3 { margin: 0 0 8px 0; font-size: 11px; color: #7f8c8d; text-transform: uppercase; }
+        .card p { margin: 0; font-size: 17px; font-weight: 700; color: var(--primary-color); }
+        .destaque-blue { color: var(--secondary-color) !important; font-size: 22px !important; }
+        .card-full { grid-column: 1 / -1; text-align: center; background: rgba(0, 61, 91, 0.03); border: none; }
+        .footer-tag { margin-bottom: 20px; font-size: 12px; color: #7f8c8d; }
 
-        .card h3 {
-            margin: 0 0 10px 0;
-            font-size: 12px;
-            color: #7f8c8d;
-            text-transform: uppercase;
+        .gaveta-itens {
+            display: none;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gaveta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f2f6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .gaveta-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .btn-fechar-gaveta {
+            background: none;
+            border: none;
+            color: #ff4757;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .grid-itens-selecao {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .coluna-item-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .linha-item-entrada {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid #ced4da;
+        }
+
+        .linha-item-entrada label {
+            font-weight: 600;
+            font-size: 13px;
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: pointer;
+            width: 70px;
         }
 
-        .card p {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
+        .linha-item-entrada input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .linha-item-entrada input[type="text"] {
+            width: 60px;
+            padding: 4px 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .linha-item-entrada input[type="text"]:focus {
+            border-color: var(--secondary-color);
+        }
+
+        .gaveta-acoes {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #f1f2f6;
+        }
+
+        .box-conferente {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .box-conferente label {
+            font-weight: bold;
             color: var(--primary-color);
-            word-wrap: break-word;
+            font-size: 14px;
         }
 
-        .destaque-blue { color: var(--secondary-color) !important; font-size: 24px !important; }
+        .box-conferente input {
+            padding: 10px 15px;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 280px;
+            outline: none;
+            transition: 0.3s;
+        }
 
-        .card-full { grid-column: 1 / -1; text-align: center; border-top: none; background: rgba(0, 61, 91, 0.05); }
+        .box-conferente input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(0, 61, 91, 0.15);
+        }
+        .nav-container { width: 95%; max-width: 1300px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn-acao-enviar {
+            padding: 12px 25px;
+            background: #20bf6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(32, 191, 107, 0.3);
+            transition: 0.2s;
+        }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        @media (max-width: 768px) {
-            .card-largo { grid-column: span 1; }
-            input { width: 100%; }
-            .search-container { flex-direction: column; width: 90%; }
+        .btn-acao-enviar:hover {
+            background: #2ed573;
+            transform: translateY(-1px);
         }
     </style>
 </head>
@@ -178,157 +431,777 @@
 
     <header>
         <div class="logo-box">
-            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Contuflex" width="160">
+            <img src="LOGO-CONTUFLEX-e1756214639359.png" alt="Contuflex" width="155">
         </div>
-        <h1 style="margin: 10px 0 5px 0; color: var(--primary-color);">Rastreamento de Pedido</h1>
-        <p style="color: #636e72; margin: 0;">Logística & Expedição Inteligente</p>
+        <h1 style="margin: 5px 0; color: var(--primary-color); font-size: 26px;">Rastreamento Inteligente</h1>
+        <p style="color: #636e72; margin: 0; font-size: 14px;">Logística, Busca & Expedição</p>
     </header>
 
     <div class="nav-container">
         <a href="inicio.html" class="btn-inicio"><i class="fas fa-home"></i> Início</a>
+        <div class="badge-total"><i class="fas fa-list-ol"></i> Total na Lista: <span id="total-lista">0</span></div>
     </div>
 
     <div class="search-container">
-        <input type="text" id="inputPedido" placeholder="Digite o número do pedido...">
-        <button class="btn-search" onclick="buscarPedido()"><i class="fas fa-search"></i> PESQUISAR</button>
+        <input type="text" id="inputBuscaProtheus" placeholder="Digite Cliente, Vendedor, Transportadora ou Nº Pedido...">
+        <button class="btn-search" onclick="buscarNoProtheus()"><i class="fas fa-search"></i> PESQUISAR PEDIDO</button>
     </div>
 
     <div class="status-timeline" id="timeline">
-        <div class="status-step" id="step-pedido"><i class="fas fa-file-invoice"></i><span>Pedido Aberto</span></div>
-        <div class="status-step" id="step-faturado"><i class="fas fa-check-circle"></i><span>Faturado</span></div>
-        <div class="status-step" id="step-coletado"><i class="fas fa-truck-loading"></i><span>Coletado</span></div>
+        <div class="status-step" id="step-pedido"><i class="fas fa-file-alt"></i><span>Pedido Aberto</span></div>
+        <div class="status-step" id="step-faturado"><i class="fas fa-receipt"></i><span>Faturado</span></div>
+        <div class="status-step" id="step-coletado"><i class="fas fa-boxes"></i><span>Coletado</span></div>
     </div>
 
     <div class="dashboard">
         <div class="card" style="border-top-color: var(--secondary-color);">
-            <h3><i class="fas fa-hashtag"></i> Pedido</h3>
+            <h3># Pedido</h3>
             <p id="res-pedido" class="destaque-blue">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-building"></i> Empresa</h3>
+            <h3>Empresa</h3>
             <p id="res-empresa">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-receipt"></i> Nota Fiscal</h3>
-            <p id="res-nf" style="color: var(--success-green);">-</p>
+            <h3>Nota Fiscal</h3>
+            <p id="res-nf">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-calendar-check"></i> Emissão NF</h3>
+            <h3>Emissão NF</h3>
             <p id="res-emissao-nf">-</p>
         </div>
 
         <div class="card card-largo">
-            <h3><i class="fas fa-user-tie"></i> Cliente</h3>
+            <h3>Cliente</h3>
             <p id="res-cliente">-</p>
         </div>
         <div class="card card-largo">
-            <h3><i class="fas fa-shipping-fast"></i> Transportadora / Via</h3>
+            <h3>Transportadora / Via</h3>
             <p id="res-transp">-</p>
         </div>
 
         <div class="card">
-            <h3><i class="fas fa-calendar-alt"></i> Data do Pedido</h3>
+            <h3>Data do Pedido</h3>
             <p id="res-emissao-ped">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-user-edit"></i> Vendedor</h3>
+            <h3>Vendedor</h3>
             <p id="res-vendedor">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-clock"></i> Lead Time</h3>
-            <p id="res-producao">-</p>
+            <h3>Lead Time PRODUÇÃO</h3>
+            <p id="res-lead">-</p>
         </div>
         <div class="card">
-            <h3><i class="fas fa-box"></i> Expedição</h3>
-            <p id="res-data_col">-</p>
+            <h3>Expedição</h3>
+            <p id="res-expedicao">-</p>
+        </div>
+        <div class="card" style="border-top-color: var(--secondary-color);">
+            <h3>Localização</h3>
+            <p id="res-localizacao" style="font-weight: bold; color: var(--primary-color); font-size: 19px;">-</p>
+        </div>
+
+        <div class="card" style="border-top-color: #f39c12;">
+            <h3>Conferente</h3>
+            <p id="res-conferente" style="font-weight: bold; color: #d35400; font-size: 17px;">-</p>
+        </div>
+        <div class="card" style="border-top-color: #9b59b6;">
+            <h3>Data da Conferência</h3>
+            <p id="res-data-loc" style="font-weight: bold; color: #8e44ad; font-size: 15px;">-</p>
+        </div>
+        <div class="card" style="border-top-color: #3498db;">
+            <h3>Lead Time Expedição</h3>
+            <p id="res-leadtime" style="font-weight: bold; color: #2980b9; font-size: 17px;">-</p>
         </div>
 
         <div class="card card-full">
-            <p id="res-obs" style="font-weight: normal; font-size: 15px; color: #7f8c8d;">Insira um pedido para iniciar a consulta em tempo real no Protheus.</p>
+            <p id="res-status-msg" style="color: #7f8c8d; font-weight: normal; font-size: 14px;">Dados sincronizados com sucesso.</p>
         </div>
     </div>
 
     <div class="footer-tag">Sistema Desenvolvido por Vicenzo Henrique &bull; Contuflex 2026</div>
 
-    <script>
-        function calcularDiferenca(dataIni, dataFim) {
-            if (!dataIni || dataIni === "-") return "-";
+    <div class="panel-container">
+        <div class="filters">
+            <input type="text" id="filtroLocal" oninput="filtrarMemoriaLocal()" placeholder="🔍 Refinar por qualquer campo...">
             
-            const [d1, m1, a1] = dataIni.split('/');
-            const date1 = new Date(a1, m1 - 1, d1);
+            <!-- Input modificado para aceitar o calendário flatpickr -->
+            <input type="text" id="filtroDataLocal" placeholder="📅 Selecione o Período (De - Até)">
+
+            <div style="display:flex; gap:6px; flex-wrap: wrap;">
+                <button class="filter-btn btn-limpar" onclick="limparFiltros()"><i class="fas fa-times-circle"></i> Limpar</button>
+                <button class="filter-btn bg-com-nf" data-filtro="COM_NF" onclick="toggleFiltro('COM_NF')">Com NF</button>
+                <button class="filter-btn bg-sem-nf" data-filtro="SEM_NF" onclick="toggleFiltro('SEM_NF')">Sem NF</button>
+                <button class="filter-btn bg-carro" data-filtro="NOSSO_CARRO" onclick="toggleFiltro('NOSSO_CARRO')">Nosso Carro</button>
+                <button class="filter-btn bg-retira" data-filtro="RETIRA" onclick="toggleFiltro('RETIRA')">Retira</button>
+                <button class="filter-btn bg-transp" data-filtro="TRANSP" onclick="toggleFiltro('TRANSP')">Transp.</button>
+                <button class="filter-btn bg-correios" data-filtro="CORREIOS" onclick="toggleFiltro('CORREIOS')">Correios</button>
+                <button class="filter-btn bg-aguardando" data-filtro="AGUARDANDO" onclick="toggleFiltro('AGUARDANDO')">Aguardando</button>
+                <button class="filter-btn bg-expedido" data-filtro="EXPEDIDO" onclick="toggleFiltro('EXPEDIDO')">Expedido</button>
+                <button class="filter-btn" id="btnSortLeadTime" style="background: #8e44ad; color: white; opacity: 0.9; margin-left: 15px;" onclick="toggleSortLeadTime()">
+                    <i class="fas fa-sort-amount-down"></i> Maior Lead Time
+                </button>
+            </div>
+        </div>
+
+        <div class="acoes-lista">
+            <button id="btn-imprimir-etiqueta-itens" class="btn-imprimir" onclick="toggleGavetaItens()" style="background: #3498db; color: white; display: none;">
+                <i class="fas fa-balance-scale"></i> Mensurar & Imprimir Etiqueta
+            </button>
+        </div>
+
+        <div id="gaveta-itens-container" class="gaveta-itens">
+            <div class="gaveta-header">
+                <h3><i class="fas fa-list-check"></i> Selecione os Itens e Quantidades</h3>
+                <button class="btn-fechar-gaveta" onclick="toggleGavetaItens()"><i class="fas fa-times-circle"></i></button>
+            </div>
             
-            let date2;
-            if (!dataFim || dataFim === "-" || dataFim === "Pendente") {
-                date2 = new Date(); 
-            } else {
-                const [d2, m2, a2] = dataFim.split('/');
-                date2 = new Date(a2, m2 - 1, d2);
-            }
-            
-            const diffTime = Math.abs(date2 - date1);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays + (diffDays === 1 ? " dia" : " dias");
+            <div class="grid-itens-selecao" id="grid-inputs-zebra">
+                <div class="coluna-item-grupo" id="col-1-10"></div>
+                <div class="coluna-item-grupo" id="col-11-20"></div>
+                <div class="coluna-item-grupo" id="col-21-30"></div>
+            </div>
+
+            <div class="gaveta-acoes" style="flex-direction: column; align-items: stretch; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px; background: #fff3cd; padding: 10px 15px; border-radius: 8px; border: 1px solid #ffeeba;">
+                    <label style="font-weight: bold; color: #856404; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="chk-finalizar-pedido" onchange="toggleLocalizacao()" style="width: 18px; height: 18px; cursor: pointer;">
+                        FINALIZAR PEDIDO
+                    </label>
+                    <input type="text" id="input-localizacao" placeholder="Digite a localização..." style="padding: 8px 12px; border: 2px solid #ffeeba; border-radius: 6px; outline: none; width: 250px; display: none;">
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="box-conferente">
+                        <label for="input-nome-conferente"><i class="fas fa-user-check"></i> Conferente:</label>
+                        <input type="text" id="input-nome-conferente" placeholder="Digite o nome do conferente..." autocomplete="off">
+                    </div>
+                    <button class="btn-acao-enviar" onclick="processarEImprimirZebra()"><i class="fas fa-print"></i> GERAR ETIQUETA ZEBRA</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Emissao</th>
+                        <th>Pedido</th>
+                        <th>Vendedor</th>
+                        <th>Nota fiscal</th>
+                        <th>Cliente</th>
+                        <th>Transporte</th>
+                        <th>Lead Time Exp.</th> 
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-corpo">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #7f8c8d; padding: 30px;">
+                            Nenhum resultado encontrado. Busque acima por Cliente, Pedido, Vendedor ou Transportadora.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
+            event.preventDefault();
+            processarEImprimirZebra();
         }
+    });
 
-        function atualizarTimeline(data) {
-         
-            document.querySelectorAll('.status-step').forEach(s => s.classList.remove('active'));
-            
-          
-            document.getElementById('step-pedido').classList.add('active');
-
-            if (data.nf && data.nf !== "Pendente") {
-                document.getElementById('step-faturado').classList.add('active');
-            }
+    let listaPedidosCarregados = [];
+    let filtrosAtivos = new Set();
+    let pedidoSelecionado = null; 
+    let ordenacaoPorLeadTimeAtiva = false;
+    let fp; // Variável global do Flatpickr
     
-            if (data.data_col && data.data_col.includes('/')) {
-                document.getElementById('step-coletado').classList.add('active');
+    function getLeadTimeValor(p) {
+        if (p.nf && p.nf !== 'Pendente' && p.nf !== '-') {
+            const isColetado = (p.data_col && p.data_col !== "AGUARDANDO" && p.data_col.includes('/'));
+            
+            const parseData = (str) => { const [d,m,a] = str.split('/'); return new Date(a, m-1, d); };
+            const dataIni = parseData(p.emissao_nf);
+            const dataFim = isColetado ? parseData(p.data_col) : new Date();
+            
+            const diff = Math.abs(dataFim - dataIni);
+            return Math.ceil(diff / (1000 * 60 * 60 * 24));
+        }
+        return -1;
+    }
+
+    function toggleSortLeadTime() {
+        ordenacaoPorLeadTimeAtiva = !ordenacaoPorLeadTimeAtiva;
+        const btn = document.getElementById('btnSortLeadTime');
+        
+        if (ordenacaoPorLeadTimeAtiva) {
+            btn.style.border = '2px solid #2d3436';
+            btn.style.transform = 'scale(1.05)';
+            btn.style.opacity = '1';
+        } else {
+            btn.style.border = '2px solid transparent';
+            btn.style.transform = 'scale(1)';
+            btn.style.opacity = '0.9';
+        }
+        filtrarMemoriaLocal();
+    }
+
+    function inicializarEstruturaGaveta() {
+        const col1 = document.getElementById('col-1-10');
+        const col2 = document.getElementById('col-11-20');
+        const col3 = document.getElementById('col-21-30');
+
+        col1.innerHTML = ''; col2.innerHTML = ''; col3.innerHTML = '';
+
+        for (let i = 1; i <= 30; i++) {
+            const itemHTML = `
+                <div class="linha-item-entrada">
+                    <label for="chk-item-${i}">
+                        <input type="checkbox" id="chk-item-${i}" onchange="toggleFocoInput(${i})">
+                        ITEM ${i}
+                    </label>
+                    <input type="text" id="qtd-item-${i}" placeholder="-" oninput="autoMarcarCheckbox(${i})">
+                </div>
+            `;
+            if (i <= 10) col1.innerHTML += itemHTML;
+            else if (i <= 20) col2.innerHTML += itemHTML;
+            else col3.innerHTML += itemHTML;
+        }
+    }
+
+    function autoMarcarCheckbox(id) {
+        const inputQtd = document.getElementById(`qtd-item-${id}`);
+        const chk = document.getElementById(`chk-item-${id}`);
+        if(inputQtd.value.trim() !== "") {
+            chk.checked = true;
+        } else {
+            chk.checked = false;
+        }
+    }
+
+    function toggleFocoInput(id) {
+        const chk = document.getElementById(`chk-item-${id}`);
+        const inputQtd = document.getElementById(`qtd-item-${id}`);
+        if (chk.checked) {
+            inputQtd.focus();
+        } else {
+            inputQtd.value = "";
+        }
+    }
+
+    function toggleGavetaItens() {
+        const gaveta = document.getElementById('gaveta-itens-container');
+        if (gaveta.style.display === 'block') {
+            gaveta.style.display = 'none';
+        } else {
+            if (!pedidoSelecionado) return alert("Por favor, selecione um pedido primeiro clicando na tabela.");
+            gaveta.style.display = 'block';
+            gaveta.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    function limparCamposGaveta() {
+        for (let i = 1; i <= 30; i++) {
+            document.getElementById(`chk-item-${i}`).checked = false;
+            document.getElementById(`qtd-item-${i}`).value = "";
+        }
+        document.getElementById('input-nome-conferente').value = ""; 
+        
+        document.getElementById('chk-finalizar-pedido').checked = false;
+        document.getElementById('input-localizacao').value = "";
+        document.getElementById('input-localizacao').style.display = "none";
+    }
+
+    function calcularDias(d1, d2) {
+        if (!d1 || d1 === "-") return "-";
+        const parseData = (str) => { const [d,m,a] = str.split('/'); return new Date(a, m-1, d); };
+        const dataIni = parseData(d1);
+        const dataFim = (!d2 || d2 === "-" || d2 === "Pendente") ? new Date() : parseData(d2);
+        const diff = Math.abs(dataFim - dataIni);
+        const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        return dias + (dias === 1 ? " dia" : " dias");
+    }
+
+    function preencherCardsDetalhe(pedido) {
+        pedidoSelecionado = pedido;
+    
+        document.getElementById('gaveta-itens-container').style.display = 'none';
+        limparCamposGaveta();
+
+        document.getElementById('btn-imprimir-etiqueta-itens').style.display = 'inline-block';
+
+        document.getElementById('res-pedido').innerText = pedido.pedido || '-';
+        document.getElementById('res-empresa').innerText = pedido.empresa || '-';
+        document.getElementById('res-cliente').innerText = pedido.cliente || '-';
+        document.getElementById('res-emissao-ped').innerText = pedido.emissao_ped || '-';
+        document.getElementById('res-vendedor').innerText = pedido.vendedor || '-';
+        document.getElementById('res-transp').innerText = pedido.transp || '-';
+        document.getElementById('res-nf').innerText = pedido.nf || 'Pendente';
+        document.getElementById('res-nf').style.color = (pedido.nf && pedido.nf !== 'Pendente') ? '#2ed573' : '#ff4757';
+        document.getElementById('res-emissao-nf').innerText = pedido.emissao_nf || '-';
+        
+        if (pedido.nf && pedido.nf !== 'Pendente' && pedido.nf !== '-') {
+            const leadTime = calcularDias(pedido.emissao_ped, pedido.emissao_nf);
+            document.getElementById('res-lead').innerText = leadTime;
+        } else {
+            document.getElementById('res-lead').innerText = "Em produção";
+        }
+
+        const isColetado = (pedido.data_col && pedido.data_col !== "AGUARDANDO" && pedido.data_col.includes('/'));
+        const elExp = document.getElementById('res-expedicao');
+        elExp.innerText = isColetado ? pedido.data_col : 'AGUARDANDO';
+        elExp.style.color = isColetado ? '#2ed573' : '#ff4757';
+
+        const elLeadTimeExp = document.getElementById('res-leadtime');
+        if (elLeadTimeExp) {
+            if (pedido.nf && pedido.nf !== 'Pendente' && pedido.nf !== '-' && isColetado) {
+                elLeadTimeExp.innerText = calcularDias(pedido.emissao_nf, pedido.data_col);
+            } else if (pedido.nf && pedido.nf !== 'Pendente' && pedido.nf !== '-') {
+                elLeadTimeExp.innerText = calcularDias(pedido.emissao_nf, "Pendente") + " (Em andamento)";
+            } else {
+                elLeadTimeExp.innerText = "-";
             }
         }
 
-        async function buscarPedido() {
-            const pedidoInput = document.getElementById('inputPedido').value.toUpperCase();
-            if (!pedidoInput) return;
+        document.getElementById('res-localizacao').innerText = pedido.localizacao || '---';
+        document.getElementById('res-conferente').innerText = pedido.conferente || '---';
+        document.getElementById('res-data-loc').innerText = pedido.data_loc || '---';    
 
-            const resObs = document.getElementById('res-obs');
-            resObs.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Acessando banco de dados TOTVS...';
+        document.querySelectorAll('.status-step').forEach(s => s.classList.remove('active'));
+        document.getElementById('step-pedido').classList.add('active');
+        if (pedido.nf && pedido.nf !== 'Pendente') document.getElementById('step-faturado').classList.add('active');
+        if (isColetado) document.getElementById('step-coletado').classList.add('active');
+    }
 
-            try {
-                const response = await fetch(`${window.location.origin}/pedido/${pedidoInput}`);
-                const data = await response.json();
+    async function processarEImprimirZebra() {
+        if (!pedidoSelecionado) return alert("Por favor, selecione um pedido primeiro.");
 
-                if (data.erro) {
-                    resObs.innerText = "⚠️ Pedido não localizado.";
-                    alert("Pedido inexistente ou excluído.");
-                } else {
-                    document.getElementById('res-pedido').innerText      = data.pedido;
-                    document.getElementById('res-empresa').innerText     = data.empresa;
-                    document.getElementById('res-cliente').innerText     = data.cliente;
-                    document.getElementById('res-emissao-ped').innerText = data.emissao_ped;
-                    document.getElementById('res-nf').innerText          = data.nf || 'Pendente';
-                    document.getElementById('res-emissao-nf').innerText  = data.emissao_nf || '-';
-                    document.getElementById('res-transp').innerText      = data.transp;
-                    document.getElementById('res-vendedor').innerText    = data.vendedor;
+        let itensSelecionados = [];
 
-                    const dias = calcularDiferenca(data.emissao_ped, data.emissao_nf);
-                    document.getElementById('res-producao').innerText = dias;
-
-                    const elDataCol = document.getElementById('res-data_col');
-                    const coletado = (data.data_col && data.data_col.includes('/'));
-                    elDataCol.innerText = coletado ? data.data_col : 'AGUARDANDO';
-                    elDataCol.style.color = coletado ? '#2ed573' : '#ff4757';
-
-                    atualizarTimeline(data);
-                    resObs.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success-green)"></i> Dados sincronizados com sucesso.';
-                }
-            } catch (error) {
-                resObs.innerText = "❌ Erro na comunicação com o servidor.";
+        for (let i = 1; i <= 30; i++) {
+            const chk = document.getElementById(`chk-item-${i}`);
+            if (chk.checked) {
+                let qtdVal = document.getElementById(`qtd-item-${i}`).value.trim();
+                qtdVal = qtdVal === "" ? "0" : qtdVal;
+                
+                itensSelecionados.push({
+                    numero: i,
+                    quantidade: qtdVal
+                });
             }
         }
 
-        document.getElementById('inputPedido').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') buscarPedido();
+        if (itensSelecionados.length === 0) {
+            return alert("Por favor, selecione pelo menos um item da lista e insira a quantidade.");
+        }
+
+        let nomeConferente = document.getElementById('input-nome-conferente').value.trim();
+        if (nomeConferente === "") {
+            nomeConferente = "___________________"; 
+        }
+
+        let itensHTML = "";
+        itensSelecionados.forEach(item => {
+            itensHTML += `
+                <div class="item-line">
+                    <span class="lbl-item-id">ITEM ${item.numero}</span>
+                    <span class="lbl-item-sep">-</span>
+                    <span class="lbl-item-qtd">${item.quantidade}</span>
+                </div>
+            `;
         });
-    </script>
+
+        const p = pedidoSelecionado;
+        const dataImpressao = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        const nomeTransp = p.transp ? p.transp.split('|')[0].trim() : '-';
+        
+        const chkFinalizar = document.getElementById('chk-finalizar-pedido');
+        const inputLocalizacao = document.getElementById('input-localizacao').value.trim();
+
+        if (chkFinalizar.checked) {
+            if (inputLocalizacao === "") {
+                return alert("Por favor, preencha a localização para finalizar o pedido.");
+            }
+
+            const dadosPlanilha = {
+                pedido: p.pedido || '-',
+                data: new Date().toLocaleDateString('pt-BR'),
+                hora: new Date().toLocaleTimeString('pt-BR'),
+                transportadora: nomeTransp,
+                conferente: nomeConferente !== "___________________" ? nomeConferente : "NÃO INFORMADO",
+                localizacao: inputLocalizacao
+            };
+
+            fetch('/api/finalizar_pedido', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosPlanilha)
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("Aviso: Erro ao registrar no Excel em segundo plano. Verifique se o arquivo está aberto.");
+                }
+            }).catch(error => {
+                console.error("Erro de rede ao salvar no Excel:", error);
+            });
+        }
+
+        const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
+        let numRows = Math.ceil(itensSelecionados.length / 3);
+
+        const html = `
+            <!DOCTYPE html>
+            <html lang="pt-br">
+            <head>
+                <meta charset="UTF-8">
+                <title>Etiqueta Pedido ${p.pedido}</title>
+                <style>
+                    @page { margin: 0; size: 100mm 50mm; } 
+                    body {
+                        font-family: 'Arial', sans-serif;
+                        margin: 0;
+                        padding: 2mm 3mm;
+                        width: 100mm;
+                        height: 50mm;
+                        box-sizing: border-box;
+                        color: #000;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                    }
+                    .header-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-end;
+                        border-bottom: 2px solid #000;
+                        padding-bottom: 1mm;
+                        margin-bottom: 1mm; 
+                    }
+                    .pedido-destaque { font-size: 35px; font-weight: 900; margin: 0; }
+                    .data-impressao { font-size: 13px; font-weight: 900; }
+                    .info-row {
+                        font-size: 10px;
+                        font-weight: 900;
+                        margin-bottom: 0.5mm;
+                        white-space: nowrap;    
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    .info-label { font-size: 8px; font-weight: 900; margin: 0; }
+                    .items-box {
+                        border: 2px solid #000;
+                        border-radius: 4px;
+                        padding: 1.5mm 2mm;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr 1fr;
+                        grid-template-rows: repeat(${numRows}, auto);
+                        grid-auto-flow: column;
+                        gap: 1mm 4mm;
+                        margin: 1mm 0;
+                        flex-grow: 1;
+                        background-color: #fff;
+                        overflow: hidden; 
+                    }
+                    .item-line {
+                        display: flex;
+                        font-size: 11px;
+                        font-weight: bold;
+                        justify-content: flex-start;
+                        align-items: center;
+                    }
+                    .lbl-item-id { width: 45px; }
+                    .lbl-item-sep { padding: 0 4px; }
+                    .lbl-item-qtd { font-weight: 900; }
+                    .footer-row {
+                        display: flex;
+                        align-items: flex-end;
+                        margin-top: 0.5mm;
+                        font-size: 9px;
+                        font-weight: 900;
+                    }
+                    .nome-conferente-txt {
+                        margin-left: 4px;
+                        font-size: 11px;
+                        font-weight: 900;
+                        text-transform: uppercase;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-row">
+                    <div class="pedido-destaque">${p.pedido || '-'}</div>
+                    <div class="data-impressao">DATA: ${dataImpressao}</div>
+                </div>
+                <div class="info-row"><span class="info-label">CLI:</span> ${p.cliente || '-'}</div>
+                <div class="info-row"><span class="info-label">TRANSP:</span> ${nomeTransp}</div>
+                <div class="items-box">
+                    ${itensHTML}
+                </div>
+                <div class="footer-row">
+                    <span>CONFERENTE:</span>
+                    <div class="nome-conferente-txt">${nomeConferente}</div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        janelaImpressao.document.write(html);
+        janelaImpressao.document.close();
+        
+        setTimeout(() => {
+            janelaImpressao.print();
+            janelaImpressao.close();
+        }, 500);
+    }
+
+    async function buscarNoProtheus() {
+        const termo = document.getElementById('inputBuscaProtheus').value.trim();
+        if (!termo) return alert("Por favor, digite um parâmetro para busca!");
+
+        const msgStatus = document.getElementById('res-status-msg');
+        msgStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando Protheus...';
+
+        try {
+            const response = await fetch(`/pedido/${encodeURIComponent(termo)}`);
+            if (!response.ok) throw new Error("Nenhum dado encontrado.");
+
+            const data = await response.json();
+            listaPedidosCarregados = data;
+            
+            msgStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#2ed573"></i> ${data.length} resultado(s) encontrado(s).`;
+            
+            document.getElementById('filtroLocal').value = termo;
+            
+            filtrarMemoriaLocal();
+
+            const textoUpper = termo.toUpperCase();
+            const primeiroFiltrado = data.find(p => 
+                (p.pedido && p.pedido.toUpperCase().includes(textoUpper)) ||
+                (p.cliente && p.cliente.toUpperCase().includes(textoUpper)) ||
+                (p.vendedor && p.vendedor.toUpperCase().includes(textoUpper)) ||
+                (p.transp && p.transp.toUpperCase().includes(textoUpper)) ||
+                (p.nf && p.nf.toUpperCase().includes(textoUpper))
+            );
+
+            if (primeiroFiltrado) {
+                preencherCardsDetalhe(primeiroFiltrado);
+            } else if (data.length > 0) {
+                preencherCardsDetalhe(data[0]);
+            }
+
+        } catch (err) {
+            msgStatus.innerHTML = "⚠️ Nao encontrado ou erro na conexão.";
+            document.getElementById('tabela-corpo').innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ff4757;">Nenhum resultado para "${termo}".</td></tr>`;
+            document.getElementById('total-lista').innerText = "0";
+            
+            document.getElementById('btn-imprimir-etiqueta-itens').style.display = 'none';
+            document.getElementById('gaveta-itens-container').style.display = 'none';
+            pedidoSelecionado = null;
+        }
+    }
+
+    function renderizarTabela(lista) {
+        const corpo = document.getElementById('tabela-corpo');
+        document.getElementById('total-lista').innerText = lista.length;
+
+        if(!lista || lista.length === 0) {
+            corpo.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#7f8c8d;">Nenhum item corresponde aos filtros.</td></tr>`;
+            return;
+        }
+
+        corpo.innerHTML = '';
+        lista.forEach(p => {
+            const isColetado = (p.data_col && p.data_col !== "AGUARDANDO" && p.data_col.includes('/'));
+            
+            const leadTimeVal = getLeadTimeValor(p);
+            let leadTimeTexto = "-";
+            if (leadTimeVal >= 0) {
+                leadTimeTexto = leadTimeVal + (leadTimeVal === 1 ? " dia" : " dias");
+                if (!isColetado) leadTimeTexto += " <span style='font-size:10px; color:#7f8c8d; display:block;'>(Andamento)</span>";
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = "linha-pedido";
+            tr.style.cursor = "pointer";
+            tr.onclick = () => preencherCardsDetalhe(p);
+
+            tr.innerHTML = `
+                <td>${p.emissao_ped || '-'}</td>
+                <td style="font-weight:bold; color:#00a8e8;">${p.pedido || '-'}</td>
+                <td title="${p.vendedor}">${p.vendedor || '-'}</td>
+                <td style="font-weight:bold; color:${(p.nf && p.nf !== 'Pendente' && p.nf !== '-')?'#2ed573':'#ff4757'}">${p.nf || 'Pendente'}</td>
+                <td title="${p.cliente}">${p.cliente || '-'}</td>
+                <td style="font-weight:600;">${p.transp ? p.transp.split('|')[0].trim() : '-'}</td>
+                <td style="text-align:center; font-weight:bold; color:#8e44ad;">${leadTimeTexto}</td>
+                <td style="font-weight:bold; color:${isColetado?'#2ed573':'#ff4757'}">${isColetado ? 'EXPEDIDO' : 'AGUARDANDO'}</td>
+            `;
+            corpo.appendChild(tr);
+        });
+    }
+
+    function toggleFiltro(status) {
+        if (filtrosAtivos.has(status)) {
+            filtrosAtivos.delete(status);
+        } else {
+            filtrosAtivos.add(status);
+        }
+        atualizarBotoesFiltro();
+        filtrarMemoriaLocal();
+    }
+
+    function limparFiltros() {
+        filtrosAtivos.clear();
+        if (fp) fp.clear(); // Limpa as datas selecionadas no Flatpickr automaticamente
+        document.getElementById('filtroLocal').value = '';
+        atualizarBotoesFiltro();
+        filtrarMemoriaLocal();
+    }
+
+    function atualizarBotoesFiltro() {
+        document.querySelectorAll('.filter-btn[data-filtro]').forEach(btn => {
+            if (filtrosAtivos.has(btn.dataset.filtro)) {
+                btn.classList.add('ativo');
+            } else {
+                btn.classList.remove('ativo');
+            }
+        });
+    }
+
+    function testarRegra(p, filtro) {
+        if (filtro === 'COM_NF') return p.nf && p.nf !== 'Pendente' && p.nf !== '-';
+        if (filtro === 'SEM_NF') return !p.nf || p.nf === 'Pendente' || p.nf === '-';
+        if (filtro === 'NOSSO_CARRO') return p.transp && p.transp.toUpperCase().includes('CARRO');
+        if (filtro === 'RETIRA') return p.transp && p.transp.toUpperCase().includes('RETIRA');
+        if (filtro === 'CORREIOS') return p.transp && (p.transp.toUpperCase().includes('CORREIO') || p.transp.toUpperCase().includes('SEDEX'));
+        if (filtro === 'TRANSP') {
+            return p.transp && 
+                   !p.transp.toUpperCase().includes('RETIRA') && 
+                   !p.transp.toUpperCase().includes('CARRO') &&
+                   !p.transp.toUpperCase().includes('CORREIO') &&
+                   !p.transp.toUpperCase().includes('SEDEX');
+        }
+        if (filtro === 'AGUARDANDO') return !(p.data_col && p.data_col.includes('/'));
+        if (filtro === 'EXPEDIDO') return p.data_col && p.data_col.includes('/');
+        return true;
+    }
+
+    function aplicarMultiplosFiltros(lista) {
+        if (filtrosAtivos.size === 0) return lista;
+
+        return lista.filter(p => {
+            let passNF = true;
+            let passTransp = true;
+            let passStatus = true;
+
+            const nfSelecionados = ['COM_NF', 'SEM_NF'].filter(f => filtrosAtivos.has(f));
+            if (nfSelecionados.length > 0) {
+                passNF = nfSelecionados.some(f => testarRegra(p, f));
+            }
+
+            const transpSelecionados = ['NOSSO_CARRO', 'RETIRA', 'TRANSP', 'CORREIOS'].filter(f => filtrosAtivos.has(f));
+            if (transpSelecionados.length > 0) {
+                passTransp = transpSelecionados.some(f => testarRegra(p, f));
+            }
+
+            const statusSelecionados = ['AGUARDANDO', 'EXPEDIDO'].filter(f => filtrosAtivos.has(f));
+            if (statusSelecionados.length > 0) {
+                passStatus = statusSelecionados.some(f => testarRegra(p, f));
+            }
+
+            return passNF && passTransp && passStatus;
+        });
+    }
+
+    function filtrarMemoriaLocal() {
+        const texto = document.getElementById('filtroLocal').value
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase().trim();
+
+        let listaFiltrada = aplicarMultiplosFiltros(listaPedidosCarregados);
+
+    
+        if (fp && fp.selectedDates.length === 2) {
+            const dataInicio = new Date(fp.selectedDates[0]);
+            const dataFim = new Date(fp.selectedDates[1]);
+            dataInicio.setHours(0,0,0,0);
+            dataFim.setHours(23,59,59,999);
+
+            listaFiltrada = listaFiltrada.filter(p => {
+                if (!p.emissao_ped || !p.emissao_ped.includes('/')) return false;
+                const [dia, mes, ano] = p.emissao_ped.split('/');
+                const dataPed = new Date(ano, mes - 1, dia);
+                return dataPed >= dataInicio && dataPed <= dataFim;
+            });
+        }
+
+        if (texto) {
+            listaFiltrada = listaFiltrada.filter(p => {
+                const limpar = (campo) => (campo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
+                return limpar(p.pedido).includes(texto) ||
+                       limpar(p.cliente).includes(texto) ||
+                       limpar(p.vendedor).includes(texto) || 
+                       limpar(p.transp).includes(texto) || 
+                       limpar(p.nf).includes(texto) ||
+                       limpar(p.emissao_ped).includes(texto);
+            });
+        }
+        
+        listaFiltrada.sort((a, b) => {
+            const converterParaObjetoData = (strData) => {
+                if (!strData || !strData.includes('/')) return new Date(0);
+                const [dia, mes, ano] = strData.split('/');
+                return new Date(ano, mes - 1, dia);
+            };
+            return converterParaObjetoData(b.emissao_ped) - converterParaObjetoData(a.emissao_ped);
+        });
+
+        if (ordenacaoPorLeadTimeAtiva) {
+            listaFiltrada.sort((a, b) => {
+                const leadA = getLeadTimeValor(a);
+                const leadB = getLeadTimeValor(b);
+                return leadB - leadA;
+            });
+        }
+
+        renderizarTabela(listaFiltrada);
+    }
+
+    document.getElementById('inputBuscaProtheus').addEventListener('keypress', (e) => { 
+        if(e.key === 'Enter') buscarNoProtheus(); 
+    });
+
+    window.onload = () => {
+        inicializarEstruturaGaveta();
+
+      
+        fp = flatpickr("#filtroDataLocal", {
+            mode: "range",
+            dateFormat: "d/m/Y",
+            locale: "pt",
+            onChange: function(selectedDates) {
+             
+                if (selectedDates.length === 2 || selectedDates.length === 0) {
+                    filtrarMemoriaLocal();
+                }
+            }
+        });
+    };
+
+    function toggleLocalizacao() {
+        const chk = document.getElementById('chk-finalizar-pedido');
+        const inputLoc = document.getElementById('input-localizacao');
+        if (chk.checked) {
+            inputLoc.style.display = 'block';
+            inputLoc.focus();
+        } else {
+            inputLoc.style.display = 'none';
+            inputLoc.value = '';
+        }
+    }
+</script>
 </body>
 </html>

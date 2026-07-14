@@ -1,0 +1,28 @@
+
+
+Back  -------- > (python) / Framework Flask(gerencia as rotas da API e a lógica de negócio)
+                       	     Biblioteca PyODBC(Ela faz a interface entre o Python e o banco de dados através de um driver ODBC) 
+
+
+front -------- > (hmtl ,css e java)
+                                
+			
+
+
+ O Fluxo dos Dados 
+
+
+Request (Requisição): O navegador faz uma chamada HTTP GET assíncrona (via fetch) para uma rota específica no Flask (ex: /pedidos/pendentes_coleta).
+
+Database Query: O Flask usa o PyODBC para abrir uma conexão com o DSN configurado no Windows e executa um comando SQL nas tabelas do TOTVS.
+
+Data Processing: O Python recebe os dados brutos, remove as duplicatas (usando a estrutura set()) e faz o parsing/formatação das datas.
+
+Serialization: A lista de objetos Python é serializada em JSON e enviada como resposta da requisição.
+
+DOM Manipulation: O JavaScript recebe esse JSON, percorre os dados e injeta o conteúdo dinamicamente no DOM (Document Object Model) do HTML, criando as linhas da tabela.
+
+
+uma API REST em Flask que consome o banco do TOTVS via PyODBC.
+O Frontend é uma Single Page Application (SPA) simples que faz requisições assíncronas e renderiza os dados dinamicamente,
+tratando duplicatas de itens por pedido e ordenando por data de emissão no lado do servidor.

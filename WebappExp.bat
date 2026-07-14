@@ -9,6 +9,6 @@ start /min python app.py
 timeout /t 3 /nobreak >nul
 
 :: Abre o site no navegador padrão
-start server_padrao/
+start http://127.0.0.1:5000/
 
 exit
